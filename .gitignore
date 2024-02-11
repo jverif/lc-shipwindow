@@ -1,0 +1,6 @@
+.vs
+ShipWindow/bin
+ShipWindow/obj
+*.csproj
+*.sln
+*.zip
