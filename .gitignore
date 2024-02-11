@@ -3,4 +3,4 @@ ShipWindow/bin
 ShipWindow/obj
 *.csproj
 *.sln
-*.zip
+out/*.zip
