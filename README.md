@@ -11,6 +11,10 @@ Check mod configuration after first launch for controlling skybox, window shutte
 
 ## Update History
 
+- **1.1.2**
+    - Make window a little less blurry.
+    - Fix network desync, add some safeguards.
+
 - **1.1.1**
     - Update readme and add website link.
 

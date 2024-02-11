@@ -50,6 +50,8 @@ namespace ShipWindow
             spaceOutsideSetting = Config.Bind<int>("General", "SpaceOutside", 1, 
                 "Set this value to control how the outside space looks. (0 = Let other mods handle, 1 = Space HDRI Volume (default), 2 = Black sky with stars)");
 
+            mls.LogInfo($"Settings Shutter: {enableShutter.Value} | Hide Space Props: {hideSpaceProps.Value} | Space Outside: {spaceOutsideSetting.Value}");
+
             string sAssemblyLocation = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
             windowBundle = AssetBundle.LoadFromFile(Path.Combine(sAssemblyLocation, "ship_window"));
 

@@ -23,25 +23,14 @@ namespace ShipWindow
             }
             set { _instance = value; }
         }
-        public Animator windowAnimator;
-        public GameObject universeVolume;
-        public GameObject starSphereLarge;
 
         public override void OnNetworkSpawn()
         {
+            Instance = this;
 
             ShipWindowPlugin.mls.LogInfo("Network window spawn");
 
             DontDestroyOnLoad(gameObject);
-            Instance = this;
-
-            GameObject windowShipObject = ShipWindowPlugin.newShipInstance;
-            if (windowShipObject != null)
-                windowAnimator = windowShipObject.transform.Find("WindowContainer/Window").GetComponent<Animator>();
-
-            universeVolume = ShipWindowPlugin.universeVolume;
-            starSphereLarge = ShipWindowPlugin.starSphereLarge;
-
             SetWindowState(false);
 
             base.OnNetworkSpawn();
@@ -56,7 +45,12 @@ namespace ShipWindow
         public void SetWindowState(bool closed)
         {
             if (ShipWindowPlugin.enableShutter.Value == true)
-                windowAnimator?.SetBool("Closed", closed);
+            {
+                var windowAnimator = ShipWindowPlugin.newShipInstance.transform.Find("WindowContainer/Window").GetComponent<Animator>();
+                if (windowAnimator != null)
+                    windowAnimator?.SetBool("Closed", closed);
+            }
+               
         }
 
         [ClientRpc]
@@ -67,6 +61,9 @@ namespace ShipWindow
 
         public void SetVolumeState(bool enabled)
         {
+            var universeVolume = ShipWindowPlugin.universeVolume;
+            var starSphereLarge = ShipWindowPlugin.starSphereLarge;
+
             switch (ShipWindowPlugin.spaceOutsideSetting.Value)
             {
                 case 0: break;
