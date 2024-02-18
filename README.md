@@ -11,7 +11,7 @@ Check mod configuration after first launch for controlling skybox, window shutte
 
 ## Update History
 
-- **1.2**
+- **1.2.0**
     - Replace shutter texture (Thank you Soup (souper194))
     - Add a switch to toggle the window shutter. It can be moved like any other furniture.
     - Re-enable fog in ship lobby.
