@@ -24,6 +24,9 @@ namespace ShipWindow
             set { _instance = value; }
         }
 
+        public bool isWindowClosed;
+        public bool isWindowLocked = false;
+
         public override void OnNetworkSpawn()
         {
             Instance = this;
@@ -31,19 +34,28 @@ namespace ShipWindow
             ShipWindowPlugin.mls.LogInfo("Network window spawn");
 
             DontDestroyOnLoad(gameObject);
-            SetWindowState(false);
+            SetWindowState(false, false);
 
             base.OnNetworkSpawn();
         }
 
-        [ClientRpc]
-        public void SetWindowStateClientRpc(bool closed)
+        [ServerRpc(RequireOwnership = false)]
+        public void SetWindowStateServerRpc(bool closed, bool locked)
         {
-            SetWindowState(closed);
+            SetWindowStateClientRpc(closed, locked);
         }
 
-        public void SetWindowState(bool closed)
+        [ClientRpc]
+        public void SetWindowStateClientRpc(bool closed, bool locked)
         {
+            SetWindowState(closed, locked);
+        }
+
+        public void SetWindowState(bool closed, bool locked)
+        {
+            isWindowClosed = closed;
+            isWindowLocked = locked;
+
             if (ShipWindowPlugin.enableShutter.Value == true)
             {
                 var windowAnimator = ShipWindowPlugin.newShipInstance.transform.Find("WindowContainer/Window").GetComponent<Animator>();
@@ -51,6 +63,12 @@ namespace ShipWindow
                     windowAnimator?.SetBool("Closed", closed);
             }
                
+        }
+
+        public void ToggleWindowShutter()
+        {
+            if (isWindowLocked) return;
+            SetWindowStateServerRpc(!isWindowClosed, false);
         }
 
         [ClientRpc]

@@ -28,10 +28,12 @@ namespace ShipWindow
 
         public static GameObject newShipInstance;
         public static GameObject windowManager;
+        public static GameObject windowSwitchManager;
         public static GameObject universeVolume;
         public static GameObject starSphereLarge;
         public static GameObject spaceProps;
         public static GameObject renderingObject;
+        public static int switchUnlockableID;
 
         private static Coroutine windowCoroutine;
 
@@ -85,6 +87,13 @@ namespace ShipWindow
 
             windowManager = windowAsset;
 
+            GameObject shutterSwitchAsset = windowBundle.LoadAsset<GameObject>("Assets/LethalCompany/Mods/ShipWindow/WindowShutterSwitch.prefab");
+            if (shutterSwitchAsset == null) { mls.LogError("Could not load window switch object!"); }
+
+            shutterSwitchAsset.AddComponent<ShipWindowShutterSwitch>();
+            NetworkManager.Singleton.AddNetworkPrefab(shutterSwitchAsset);
+
+            windowSwitchManager = shutterSwitchAsset;
         }
 
         [HarmonyPostfix, HarmonyPatch(typeof(StartOfRound), "Awake")]
@@ -160,11 +169,25 @@ namespace ShipWindow
                     if (spaceProps != null) spaceProps.SetActive(false);
                 }
 
+                if (windowSwitchManager != null)
+                {
+                    int id = AddSwitchToUnlockables();
+                    var shipObject = windowSwitchManager.GetComponentInChildren<PlaceableShipObject>();
+                    shipObject.unlockableID = id;
+                }
+
                 if (NetworkManager.Singleton.IsHost || NetworkManager.Singleton.IsServer)
                 {
                     mls.LogInfo("Spawning network window...");
                     GameObject windowManagerInstance = Instantiate(windowManager);
                     windowManagerInstance.GetComponent<NetworkObject>().Spawn();
+
+                    mls.LogInfo("Spawning shutter switch...");
+                    if (windowSwitchManager != null)
+                    {
+                        GameObject switchInstance = Instantiate(windowSwitchManager);
+                        switchInstance.GetComponent<NetworkObject>().Spawn();
+                    }
                 }
 
             } catch(Exception e)
@@ -174,7 +197,41 @@ namespace ShipWindow
             
         }
 
-        static void TrySetWindowClosed(bool closed)
+        static int AddSwitchToUnlockables()
+        {
+            string name = "Shutter Switch";
+            UnlockablesList unlockablesList = StartOfRound.Instance.unlockablesList;
+
+            // When running in unity editor this function permanently edits the unlockables list.
+            // To keep from duplicating a ton, check if the unlockable is already there and use it's ID instead.
+
+            int index = unlockablesList.unlockables.FindIndex(unlockable => unlockable.unlockableName == name);
+
+            if (index == -1)
+            {
+                UnlockableItem sw = new UnlockableItem();
+                sw.unlockableName = name;
+                sw.spawnPrefab = false;
+                sw.unlockableType = 1;
+                sw.IsPlaceable = true;
+                sw.maxNumber = 1;
+                sw.canBeStored = false;
+                sw.alreadyUnlocked = true;
+
+                unlockablesList.unlockables.Capacity++;
+                unlockablesList.unlockables.Add(sw);
+                switchUnlockableID = unlockablesList.unlockables.Count - 1;
+            } else
+            {
+                switchUnlockableID = index;
+            }
+
+            mls.LogInfo($"Added shutter switch to unlockables list at ID {switchUnlockableID}");
+
+            return switchUnlockableID;
+        }
+
+        static void TrySetWindowClosed(bool closed, bool locked)
         {
             if (enableShutter.Value == false) return;
 
@@ -182,9 +239,9 @@ namespace ShipWindow
             if (ShipWindowHandler.Instance != null)
             {
                 if (NetworkManager.Singleton.IsHost || NetworkManager.Singleton.IsServer)
-                    ShipWindowHandler.Instance.SetWindowStateClientRpc(closed);
+                    ShipWindowHandler.Instance.SetWindowStateClientRpc(closed, locked);
                 else
-                    ShipWindowHandler.Instance.SetWindowState(closed);
+                    ShipWindowHandler.Instance.SetWindowState(closed, locked);
             }
         }
 
@@ -192,7 +249,7 @@ namespace ShipWindow
         {
             mls.LogInfo("Opening window in " + delay + " seconds...");
             yield return new WaitForSeconds(delay);
-            TrySetWindowClosed(false);
+            TrySetWindowClosed(false, false);
             windowCoroutine = null;
         }
 
@@ -242,7 +299,7 @@ namespace ShipWindow
         static void StartOfGame()
         {
             mls.LogInfo("StartOfGame");
-            TrySetWindowClosed(true);
+            TrySetWindowClosed(true, true);
         }
 
         [HarmonyPostfix, HarmonyPatch(typeof(RoundManager), "LoadNewLevel")]
@@ -267,7 +324,7 @@ namespace ShipWindow
         static void EndOfGame()
         {
             mls.LogInfo("EndOfGame");
-            TrySetWindowClosed(true);
+            TrySetWindowClosed(true, true);
 
             if (windowCoroutine != null) StartOfRound.Instance.StopCoroutine(windowCoroutine);
             windowCoroutine = StartOfRound.Instance.StartCoroutine(OpenWindowCoroutine(5f));
