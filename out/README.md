@@ -1,18 +1,19 @@
 # Ship Window
+Adds some glass windows to the drop ship so you can see outside.
 
-Adds a glass window to the drop ship so you can see outside. The Company didn't see it as important, so they put the terminal computer in front of it. Be sure to move that!
+**Important:** Only one window is enabled by default (behind the terminal). The other two can be enabled in the configuration after you launch the game with this mod for the first time.
 
 All players must install this mod or there may be desync issues.
+
 Check mod configuration after first launch for controlling skybox, window shutter, and outside space prop behaviors.
 
-## Planned
-
-- More windows eventually.
+Please report any issues on GitHub or in the #mod-releases thread here: https://discord.com/channels/1168655651455639582/1203500753939988532
 
 ## Update History
 
 - **1.3.0**
     - Add two new windows. One is across from the terminal, and the other is on the floor. These are disabled by default. To enable them, toggle the appropriate settings in your configuration.
+    - Re-shape existing windows.
 
 - **1.2.0**
     - Replace shutter texture (Thank you Soup (souper194))
