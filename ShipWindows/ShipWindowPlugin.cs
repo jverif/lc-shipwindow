@@ -225,13 +225,20 @@ namespace ShipWindow
             newShipInside.SetActive(true);
             vanillaShipInside.SetActive(false);
 
+            // Misc objects
+
             if (enableWindow3.Value == false) return;
-            Transform mainShipObject = vanillaShipInside.transform.parent;
+            mls.LogInfo($"Disabling misc objects under ship... {enableWindow3.Value}");
 
             foreach (string go in window3DisabledList)
             {
-                var obj = mainShipObject.Find(go);
-                if (obj == null) continue;
+                var obj = GameObject.Find($"Environment/HangarShip/{go}");
+                if (obj == null) {
+                    mls.LogWarning($"Searched for {go}, but could not find!");
+                    continue; 
+                };
+
+                mls.LogInfo($"Found {go}, disabling...");
 
                 obj.gameObject.SetActive(false);
             }
@@ -384,16 +391,19 @@ namespace ShipWindow
         [HarmonyPostfix, HarmonyPatch(typeof(StartMatchLever), "StartGame")]
         static void Patch_StartGame()
         {
-            mls.LogInfo("StartOfGame");
             TrySetWindowClosed(true, true);
+        }
+
+        [HarmonyPrefix, HarmonyPatch(typeof(StartOfRound), "openingDoorsSequence")]
+        static void Patch_OpenDoorSequence()
+        {
+            if (windowCoroutine != null) StartOfRound.Instance.StopCoroutine(windowCoroutine);
+            windowCoroutine = StartOfRound.Instance.StartCoroutine(OpenWindowCoroutine(2f));
         }
 
         [HarmonyPostfix, HarmonyPatch(typeof(RoundManager), "LoadNewLevel")]
         static void Patch_LoadNewLevel()
         {
-
-            if (windowCoroutine != null) StartOfRound.Instance.StopCoroutine(windowCoroutine);
-            windowCoroutine = StartOfRound.Instance.StartCoroutine(OpenWindowCoroutine(4f));
 
             if (ShipWindowNetworkManager.Instance != null)
             {
@@ -408,7 +418,6 @@ namespace ShipWindow
         [HarmonyPostfix, HarmonyPatch(typeof(StartOfRound), "ShipHasLeft")]
         static void Patch_ShipHasLeft()
         {
-            mls.LogInfo("EndOfGame");
             TrySetWindowClosed(true, true);
 
             if (windowCoroutine != null) StartOfRound.Instance.StopCoroutine(windowCoroutine);
