@@ -225,6 +225,10 @@ namespace ShipWindow
             newShipInside.SetActive(true);
             vanillaShipInside.SetActive(false);
 
+            // Rename objects
+            vanillaShipInside.name = "ShipInside (Old)";
+            newShipInside.name = "ShipInside";
+
             // Misc objects
 
             if (enableWindow3.Value == false) return;
