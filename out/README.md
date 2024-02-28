@@ -3,9 +3,9 @@ Adds some glass windows to the drop ship so you can see outside.
 
 **Important:** Only one window is enabled by default (behind the terminal). The other two can be enabled in the configuration after you launch the game with this mod for the first time.
 
-All players must install this mod or there may be desync issues.
-
 Check mod configuration after first launch for controlling skybox, window shutter, and outside space prop behaviors.
+
+All players must install this mod or there will be desync issues. The last version that does not break vanilla network compatability is **1.0.5**.
 
 Please report any issues on GitHub or in the #mod-releases thread in the Lethal Company Modding Discord here: https://discord.com/channels/1168655651455639582/1203500753939988532
 
