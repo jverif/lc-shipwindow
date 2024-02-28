@@ -27,7 +27,7 @@ namespace ShipWindow
         public static ShipWindowPlugin Instance { get; private set; }
         static internal ManualLogSource mls;
 
-        // Configuration
+        // Configuration, this is so bad lol
         public static ConfigEntry<bool> enableShutter;
         public static ConfigEntry<bool> hideSpaceProps;
         public static ConfigEntry<int> spaceOutsideSetting;
@@ -35,6 +35,7 @@ namespace ShipWindow
         public static ConfigEntry<bool> enableWindow2;
         public static ConfigEntry<bool> enableWindow3;
         public static ConfigEntry<bool> disableUnderLights;
+        public static ConfigEntry<bool> dontMovePosters;
 
         private static AssetBundle mainAssetBundle;
 
@@ -71,6 +72,7 @@ namespace ShipWindow
             enableWindow3 = Config.Bind<bool>("General", "EnableWindow3", false, "Enable the large glass floor.");
             
             disableUnderLights = Config.Bind<bool>("General", "DisableUnderLights", false, "Disable the flood lights added under the ship if you have the floor window enabled.");
+            dontMovePosters = Config.Bind<bool>("General", "DontMovePosters", false, "Don't move the poster that blocks the second window if enabled.");
 
             if (enableWindow1.Value == false && enableWindow2.Value == false && enableWindow3.Value == false)
             {
@@ -232,7 +234,27 @@ namespace ShipWindow
             vanillaShipInside.name = "ShipInside (Old)";
             newShipInside.name = "ShipInside";
 
-            // Misc objects
+            // Misc objects, TODO: Clean up, move to own function.
+
+            if (enableWindow2.Value == true && dontMovePosters.Value == false)
+            {
+                GameObject movedPostersPrefab = mainAssetBundle.LoadAsset<GameObject>($"Assets/LethalCompany/Mods/ShipWindow/ShipPosters.prefab");
+                if (movedPostersPrefab != null)
+                {
+                    Transform oldPosters = newShipInside.transform.parent.Find("Plane.001");
+                    if (oldPosters != null)
+                    {
+                        GameObject newPosters = Instantiate(movedPostersPrefab, newShipInside.transform.parent);
+                        newPosters.transform.position = oldPosters.transform.position;
+                        newPosters.transform.rotation = oldPosters.transform.rotation;
+
+                        oldPosters.name = "Plane.001 (Old)";
+                        newPosters.name = "Plane.001";
+
+                        oldPosters.gameObject.SetActive(false);
+                    }
+                }
+            }
 
             if (enableWindow3.Value == false) return;
             mls.LogInfo($"Disabling misc objects under ship... {enableWindow3.Value}");
