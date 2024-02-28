@@ -1,6 +1,6 @@
 .vs
-ShipWindow/bin
-ShipWindow/obj
+ShipWindows/bin
+ShipWindows/obj
 *.csproj
 *.sln
 out/*.zip
