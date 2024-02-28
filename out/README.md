@@ -7,7 +7,11 @@ All players must install this mod or there may be desync issues.
 
 Check mod configuration after first launch for controlling skybox, window shutter, and outside space prop behaviors.
 
-Please report any issues on GitHub or in the #mod-releases thread here: https://discord.com/channels/1168655651455639582/1203500753939988532
+Please report any issues on GitHub or in the #mod-releases thread in the Lethal Company Modding Discord here: https://discord.com/channels/1168655651455639582/1203500753939988532
+
+## Planned Features
+
+- Add windows as ship upgrades that can be purchased as you play.
 
 ## Update History
 

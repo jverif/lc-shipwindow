@@ -34,6 +34,7 @@ namespace ShipWindow
         public static ConfigEntry<bool> enableWindow1;
         public static ConfigEntry<bool> enableWindow2;
         public static ConfigEntry<bool> enableWindow3;
+        public static ConfigEntry<bool> disableUnderLights;
 
         private static AssetBundle mainAssetBundle;
 
@@ -68,6 +69,8 @@ namespace ShipWindow
             enableWindow1 = Config.Bind<bool>("General", "EnableWindow1", true, "Enable the window to the right of the switch, behind the terminal.");
             enableWindow2 = Config.Bind<bool>("General", "EnableWindow2", false, "Enable the window to the left of the switch, across from the first window.");
             enableWindow3 = Config.Bind<bool>("General", "EnableWindow3", false, "Enable the large glass floor.");
+            
+            disableUnderLights = Config.Bind<bool>("General", "DisableUnderLights", false, "Disable the flood lights added under the ship if you have the floor window enabled.");
 
             if (enableWindow1.Value == false && enableWindow2.Value == false && enableWindow3.Value == false)
             {
@@ -245,6 +248,13 @@ namespace ShipWindow
                 mls.LogInfo($"Found {go}, disabling...");
 
                 obj.gameObject.SetActive(false);
+            }
+
+            if (disableUnderLights.Value == true)
+            {
+                mls.LogInfo("Disabling flood lights under ship...");
+                Transform floodLights = newShipInside.transform.Find("WindowContainer/Window3/Lights");
+                if (floodLights != null) floodLights.gameObject.SetActive(false);
             }
         }
 
