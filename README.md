@@ -12,9 +12,18 @@ Please report any issues on GitHub or in the #mod-releases thread in the Lethal 
 ## Planned Features
 - Add windows as ship upgrades that can be purchased as you play.
 - Update shutters on wall windows.
-- Open / close sounds
+- Open / close sounds.
+- Vanilla compatability option.
+
+## Thanks to
+- Soup (@souper194) - Shutter texture used on versions >= 1.2.0
 
 ## Update History
+
+- **1.3.1**
+    - Window mesh improvements.
+    - Make sure all ship variants have new window design.
+    - Fix window 2 shutter not fully covering window.
 
 - **1.3.0**
     - Add two new windows. One is across from the terminal, and the other is on the floor. These are disabled by default. To enable them, toggle the appropriate settings in your configuration.
