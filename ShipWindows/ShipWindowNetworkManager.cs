@@ -84,8 +84,10 @@ namespace ShipWindow
 
         public void SetVolumeState(bool enabled)
         {
-            var universeVolume = ShipWindowPlugin.universeVolume;
-            var starSphereLarge = ShipWindowPlugin.starsSphereLarge;
+            var outsideSkybox = ShipWindowPlugin.outsideSkybox;
+            outsideSkybox?.SetActive(enabled);
+
+            /*var starSphereLarge = ShipWindowPlugin.starsSphereLarge;
 
             switch (ShipWindowPlugin.spaceOutsideSetting.Value)
             {
@@ -93,7 +95,7 @@ namespace ShipWindow
                 case 1: universeVolume?.SetActive(enabled); break;
                 case 2: starSphereLarge?.SetActive(enabled); break;
                 default: break;
-            }
+            }*/
         }
     }
 }

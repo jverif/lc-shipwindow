@@ -20,7 +20,7 @@ namespace ShipWindow
     {
         private const string modGUID = "veri.lc.shipwindow";
         private const string modName = "Ship Window";
-        private const string modVersion = "1.3.1";
+        private const string modVersion = "1.3.2";
 
         private readonly Harmony harmony = new Harmony(modGUID);
 
@@ -36,6 +36,7 @@ namespace ShipWindow
         public static ConfigEntry<bool> enableWindow3;
         public static ConfigEntry<bool> disableUnderLights;
         public static ConfigEntry<bool> dontMovePosters;
+        public static ConfigEntry<bool> rotateSkybox;
 
         private static AssetBundle mainAssetBundle;
 
@@ -45,8 +46,7 @@ namespace ShipWindow
 
         // Spawned objects
         public static GameObject newShipInside;
-        public static GameObject universeVolume;
-        public static GameObject starsSphereLarge;
+        public static GameObject outsideSkybox;
 
         // Various
         public static int switchUnlockableID;
@@ -73,6 +73,7 @@ namespace ShipWindow
             
             disableUnderLights = Config.Bind<bool>("General", "DisableUnderLights", false, "Disable the flood lights added under the ship if you have the floor window enabled.");
             dontMovePosters = Config.Bind<bool>("General", "DontMovePosters", false, "Don't move the poster that blocks the second window if enabled.");
+            rotateSkybox = Config.Bind<bool>("General", "RotateSpaceSkybox", true, "Enable slow rotation of the space skybox for visual effect.");
 
             if (enableWindow1.Value == false && enableWindow2.Value == false && enableWindow3.Value == false)
             {
@@ -297,8 +298,10 @@ namespace ShipWindow
 
                     GameObject universePrefab = mainAssetBundle.LoadAsset<GameObject>("Assets/LethalCompany/Mods/ShipWindow/UniverseVolume.prefab");
 
-                    universeVolume = Instantiate(universePrefab, renderingObject.transform);
+                    outsideSkybox = Instantiate(universePrefab, renderingObject.transform);
                     vanillaStarSphere.GetComponent<MeshRenderer>().enabled = false;
+
+                    outsideSkybox.AddComponent<SpaceSkybox>();
 
                     break;
 
@@ -310,8 +313,10 @@ namespace ShipWindow
                     GameObject starSpherePrefab = mainAssetBundle.LoadAsset<GameObject>("Assets/LethalCompany/Mods/ShipWindow/StarsSphereLarge.prefab");
                     if (starSpherePrefab == null) throw new Exception("Could not load star sphere large prefab!");
 
-                    starsSphereLarge = Instantiate(starSpherePrefab, renderingObject.transform);
+                    outsideSkybox = Instantiate(starSpherePrefab, renderingObject.transform);
                     vanillaStarSphere.GetComponent<MeshRenderer>().enabled = false;
+
+                    outsideSkybox.AddComponent<SpaceSkybox>();
 
                     break;
 
@@ -390,14 +395,14 @@ namespace ShipWindow
             // Make the stars follow the player when they get sucked out of the ship.
             if (StartOfRound.Instance.suckingPlayersOutOfShip)
             {
-                if (starsSphereLarge != null)
-                    starsSphereLarge.transform.position = GameNetworkManager.Instance.localPlayerController.transform.position;
+                if (outsideSkybox != null)
+                    outsideSkybox.transform.position = GameNetworkManager.Instance.localPlayerController.transform.position;
             } else
             {
                 // TODO: Patch something else to move this back so we aren't doing it every frame.
                 GameObject renderingObject = GameObject.Find("Systems/Rendering");
-                if (starsSphereLarge != null && renderingObject != null)
-                    starsSphereLarge.transform.position = renderingObject.transform.position;
+                if (outsideSkybox != null && renderingObject != null)
+                    outsideSkybox.transform.position = renderingObject.transform.position;
             }
 
         }
@@ -463,7 +468,12 @@ namespace ShipWindow
         [HarmonyPostfix, HarmonyPatch(typeof(RoundManager), "DespawnPropsAtEndOfRound")]
         static void Patch_DespawnProps()
         {
-            switch (spaceOutsideSetting.Value)
+
+            int dayNum = StartOfRound.Instance.gameStats.daysSpent;
+
+            SpaceSkybox.Instance?.SetRotation(dayNum * 80f);
+            outsideSkybox.SetActive(true);
+            /*switch (spaceOutsideSetting.Value)
             {
                 case 0: break;
 
@@ -476,7 +486,7 @@ namespace ShipWindow
                     break;
 
                 default: break;
-            }
+            }*/
 
             GameObject spaceProps = GameObject.Find("Environment/SpaceProps");
             if (spaceProps != null && hideSpaceProps.Value == true) spaceProps.SetActive(false);

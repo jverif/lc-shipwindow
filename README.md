@@ -20,6 +20,12 @@ Please report any issues on GitHub or in the #mod-releases thread in the Lethal 
 
 ## Update History
 
+- **1.3.2**
+    - Space skybox texture 2K -> 4K.
+    - Made floor window a bit smaller so the ship's supports don't intersect it.
+    - Add slow rotation to outside skybox (Both HDRI Sky & Star Sphere) for visual effect.
+    - Fix layer and tag for floor window
+
 - **1.3.1**
     - Window mesh improvements.
     - Make sure all ship variants have new window design.
