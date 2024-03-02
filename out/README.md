@@ -20,6 +20,10 @@ Please report any issues on GitHub or in the #mod-releases thread in the Lethal 
 
 ## Update History
 
+- **1.3.4**
+    - Compatibilty patch for Lethal Expansion with view distance mods.
+    - Actually make default skybox 2K :)
+
 - **1.3.3**
     - Move 4K skybox behind config setting. Make default 2K.
     - Fix skybox seam and increase exposure slightly.
