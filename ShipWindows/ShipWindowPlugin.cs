@@ -20,7 +20,7 @@ namespace ShipWindow
     {
         private const string modGUID = "veri.lc.shipwindow";
         private const string modName = "Ship Window";
-        private const string modVersion = "1.3.2";
+        private const string modVersion = "1.3.3";
 
         private readonly Harmony harmony = new Harmony(modGUID);
 
@@ -37,6 +37,7 @@ namespace ShipWindow
         public static ConfigEntry<bool> disableUnderLights;
         public static ConfigEntry<bool> dontMovePosters;
         public static ConfigEntry<bool> rotateSkybox;
+        public static ConfigEntry<int> skyboxResolution;
 
         private static AssetBundle mainAssetBundle;
 
@@ -74,6 +75,7 @@ namespace ShipWindow
             disableUnderLights = Config.Bind<bool>("General", "DisableUnderLights", false, "Disable the flood lights added under the ship if you have the floor window enabled.");
             dontMovePosters = Config.Bind<bool>("General", "DontMovePosters", false, "Don't move the poster that blocks the second window if enabled.");
             rotateSkybox = Config.Bind<bool>("General", "RotateSpaceSkybox", true, "Enable slow rotation of the space skybox for visual effect.");
+            skyboxResolution = Config.Bind<int>("General", "SkyboxResolution", 0, "Sets the skybox resolution (0 = 2K, 1 = 4K) 4K textures may cause performance issues.");
 
             if (enableWindow1.Value == false && enableWindow2.Value == false && enableWindow3.Value == false)
             {
@@ -172,9 +174,9 @@ namespace ShipWindow
 
             GameObject winNetAsset = mainAssetBundle.LoadAsset<GameObject>("Assets/LethalCompany/Mods/ShipWindow/WindowNetworkManager.prefab");
             winNetAsset.AddComponent<ShipWindowNetworkManager>();
-            winNetAsset.GetComponent<NetworkObject>().DontDestroyWithOwner = true;
-            winNetAsset.GetComponent<NetworkObject>().SceneMigrationSynchronization = true;
-            winNetAsset.GetComponent<NetworkObject>().DestroyWithScene = false;
+            //winNetAsset.GetComponent<NetworkObject>().DontDestroyWithOwner = true;
+            //winNetAsset.GetComponent<NetworkObject>().SceneMigrationSynchronization = true;
+            //winNetAsset.GetComponent<NetworkObject>().DestroyWithScene = false;
             NetworkManager.Singleton.AddNetworkPrefab(winNetAsset);
 
             windowNetworkPrefab = winNetAsset;
@@ -302,6 +304,14 @@ namespace ShipWindow
                     vanillaStarSphere.GetComponent<MeshRenderer>().enabled = false;
 
                     outsideSkybox.AddComponent<SpaceSkybox>();
+
+                    // Load texture
+                    if (skyboxResolution.Value == 1) // 4K
+                    {
+                        Texture2D skybox4K = mainAssetBundle.LoadAsset<Texture2D>("Assets/LethalCompany/Mods/ShipWindow/Textures/Space4KCube.png");
+                        if (skybox4K != null)
+                            outsideSkybox.GetComponent<SpaceSkybox>()?.SetSkyboxTexture(skybox4K);
+                    }
 
                     break;
 

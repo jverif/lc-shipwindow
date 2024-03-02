@@ -83,5 +83,19 @@ namespace ShipWindow
                 default: break;
             }
         }
+
+        public void SetSkyboxTexture(Texture2D skybox)
+        {
+            switch (ShipWindowPlugin.spaceOutsideSetting.Value)
+            {
+                case 0: break;
+                case 1:
+                    if (sky == null) return;
+
+                    sky.hdriSky.value = skybox;
+                    break;
+                default: break;
+            }
+        }
     }
 }

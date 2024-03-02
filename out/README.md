@@ -20,6 +20,10 @@ Please report any issues on GitHub or in the #mod-releases thread in the Lethal 
 
 ## Update History
 
+- **1.3.3**
+    - Move 4K skybox behind config setting. Make default 2K.
+    - Fix skybox seam and increase exposure slightly.
+
 - **1.3.2**
     - Space skybox texture 2K -> 4K.
     - Made floor window a bit smaller so the ship's supports don't intersect it.
