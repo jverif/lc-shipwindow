@@ -20,7 +20,7 @@ namespace ShipWindow
     {
         private const string modGUID = "veri.lc.shipwindow";
         private const string modName = "Ship Window";
-        private const string modVersion = "1.3.4";
+        private const string modVersion = "1.3.6";
 
         private readonly Harmony harmony = new Harmony(modGUID);
 
@@ -504,25 +504,19 @@ namespace ShipWindow
         [HarmonyPostfix, HarmonyPatch(typeof(RoundManager), "DespawnPropsAtEndOfRound")]
         static void Patch_DespawnProps()
         {
-
-            int dayNum = StartOfRound.Instance.gameStats.daysSpent;
-
-            SpaceSkybox.Instance?.SetRotation(dayNum * 80f);
-            outsideSkybox.SetActive(true);
-            /*switch (spaceOutsideSetting.Value)
+            switch (spaceOutsideSetting.Value)
             {
                 case 0: break;
 
                 case 1:
-                    if (universeVolume != null) universeVolume.SetActive(true);
-                    break;
-
                 case 2:
-                    if (starsSphereLarge != null) starsSphereLarge.SetActive(true);
+                    int dayNum = StartOfRound.Instance.gameStats.daysSpent;
+                    SpaceSkybox.Instance?.SetRotation(dayNum * 80f);
+                    outsideSkybox.SetActive(true);
                     break;
 
                 default: break;
-            }*/
+            }
 
             GameObject spaceProps = GameObject.Find("Environment/SpaceProps");
             if (spaceProps != null && hideSpaceProps.Value == true) spaceProps.SetActive(false);
