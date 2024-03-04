@@ -20,7 +20,7 @@ namespace ShipWindow
     {
         private const string modGUID = "veri.lc.shipwindow";
         private const string modName = "Ship Window";
-        private const string modVersion = "1.3.3";
+        private const string modVersion = "1.3.4";
 
         private readonly Harmony harmony = new Harmony(modGUID);
 
@@ -207,6 +207,19 @@ namespace ShipWindow
             
         }
 
+        [HarmonyPostfix, HarmonyPatch(typeof(StartOfRound), "Start")]
+        static void Patch_RoundStart()
+        {
+            try
+            {
+                RunCompatPatches();
+            } catch (Exception e)
+            {
+                mls.LogError(e);
+            }
+
+        }
+
         static void AddWindowScripts(GameObject ship)
         {
             Transform container = ship.transform.Find("WindowContainer");
@@ -388,6 +401,18 @@ namespace ShipWindow
             }
         }
 
+        static void RunCompatPatches()
+        {
+            // https://github.com/jverif/lc-shipwindow/issues/8
+            // Lethal Expansion "terrainfixer" is positioned at 0, -500, 0 and becomes
+            // visible when a mod that increases view distance is installed.
+            GameObject terrainfixer = GameObject.Find("terrainfixer");
+            if (terrainfixer != null)
+            {
+                terrainfixer.transform.position = new Vector3(0, -5000, 0);
+            }
+        }
+
         static IEnumerator OpenWindowCoroutine(float delay)
         {
             mls.LogInfo("Opening window in " + delay + " seconds...");
@@ -445,7 +470,7 @@ namespace ShipWindow
             TrySetWindowClosed(true, true);
         }
 
-        [HarmonyPrefix, HarmonyPatch(typeof(StartOfRound), "openingDoorsSequence")]
+        [HarmonyPostfix, HarmonyPatch(typeof(RoundManager), "FinishGeneratingNewLevelClientRpc")]
         static void Patch_OpenDoorSequence()
         {
             if (windowCoroutine != null) StartOfRound.Instance.StopCoroutine(windowCoroutine);
