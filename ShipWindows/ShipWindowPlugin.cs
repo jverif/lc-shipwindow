@@ -470,6 +470,7 @@ namespace ShipWindow
             TrySetWindowClosed(true, true);
         }
 
+        // TODO: This does not need to be networked anymore.
         [HarmonyPostfix, HarmonyPatch(typeof(RoundManager), "FinishGeneratingNewLevelClientRpc")]
         static void Patch_OpenDoorSequence()
         {
