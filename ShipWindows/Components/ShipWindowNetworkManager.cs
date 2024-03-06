@@ -61,8 +61,8 @@ namespace ShipWindows.Components
             {
                 ShipWindow[] windows = FindObjectsByType<ShipWindow>(FindObjectsSortMode.None);
 
-                foreach (ShipWindow w in windows)
-                    w.SetWindowState(closed);
+               // foreach (ShipWindow w in windows)
+                    //w.SetWindowState(closed);
 
                 //var windowAnimator = ShipWindowPlugin.newShipInstance.transform.Find("WindowContainer/Window").GetComponent<Animator>();
                 //if (windowAnimator != null)

@@ -10,8 +10,13 @@ namespace ShipWindows.Components
     public class ShipWindow : MonoBehaviour
     {
 
-        public void SetWindowState(bool closed)
+        public static bool Closed { get; set; }
+        public static bool Locked {  get; set; }
+
+        public void SetWindowState(bool closed, bool locked)
         {
+            Closed = closed;
+            Locked = locked;
             GetComponent<Animator>()?.SetBool("Closed", closed);
         }
     }

@@ -61,17 +61,17 @@ namespace ShipWindows
                 return;
             }
 
-            mls.LogInfo($"Current settings:"
-                + $"    Shutters:       {WindowConfig.enableShutter}"
-                + $"    Space Props:    {WindowConfig.hideSpaceProps}"
-                + $"    Space Sky:      {WindowConfig.spaceOutsideSetting}"
-                + $"    Window 1:       {WindowConfig.enableWindow1}"
-                + $"    Window 2:       {WindowConfig.enableWindow2}"
-                + $"    Window 3:       {WindowConfig.enableWindow3}"
-                + $"    Bottom Lights:  {WindowConfig.disableUnderLights}"
-                + $"    Posters:        {WindowConfig.dontMovePosters}"
-                + $"    Sky Rotation:   {WindowConfig.rotateSkybox}"
-                + $"    Sky Resolution: {WindowConfig.skyboxResolution}"
+            mls.LogInfo($"\nCurrent settings:\n"
+                + $"    Shutters:       {WindowConfig.enableShutter.Value}\n"
+                + $"    Space Props:    {WindowConfig.hideSpaceProps.Value}\n"
+                + $"    Space Sky:      {WindowConfig.spaceOutsideSetting.Value}\n"
+                + $"    Window 1:       {WindowConfig.enableWindow1.Value}\n"
+                + $"    Window 2:       {WindowConfig.enableWindow2.Value}\n"
+                + $"    Window 3:       {WindowConfig.enableWindow3.Value}\n"
+                + $"    Bottom Lights:  {WindowConfig.disableUnderLights.Value}\n"
+                + $"    Posters:        {WindowConfig.dontMovePosters.Value}\n"
+                + $"    Sky Rotation:   {WindowConfig.rotateSkybox.Value}\n"
+                + $"    Sky Resolution: {WindowConfig.skyboxResolution.Value}"
             );
 
             
@@ -403,6 +403,23 @@ namespace ShipWindows
             }
         }
 
+        static void HandleSetWindowState(bool closed, bool locked)
+        {
+            if (WindowConfig.enableShutter.Value == true)
+            {
+                ShipWindow[] windows = FindObjectsByType<ShipWindow>(FindObjectsSortMode.None);
+
+                foreach (ShipWindow w in windows)
+                    w.SetWindowState(closed, locked);
+            }
+        }
+
+        static void HandleSetVolumeState(bool active)
+        {
+            var outsideSkybox = ShipWindowPlugin.outsideSkybox;
+            outsideSkybox?.SetActive(active);
+        }
+
         static IEnumerator OpenWindowCoroutine(float delay)
         {
             mls.LogInfo("Opening window in " + delay + " seconds...");
@@ -419,12 +436,18 @@ namespace ShipWindows
         static void InitializeLocalPlayer()
         {
             NetworkHandler.RegisterMessages();
+
+            NetworkHandler.SetVolumeStateEvent += HandleSetVolumeState;
+            NetworkHandler.SetWindowStateEvent += HandleSetWindowState;
         }
 
         [HarmonyPostfix, HarmonyPatch(typeof(GameNetworkManager), "StartDisconnect")]
         static void PlayerLeave()
         {
             NetworkHandler.UnregisterMessages();
+
+            NetworkHandler.SetVolumeStateEvent -= HandleSetVolumeState;
+            NetworkHandler.SetWindowStateEvent -= HandleSetWindowState;
         }
 
         [HarmonyPostfix, HarmonyPatch(typeof(StartOfRound), "LateUpdate")]

@@ -12,29 +12,31 @@ namespace ShipWindows
         internal static bool IsClient => NetworkManager.Singleton.IsClient;
         internal static bool IsHost => NetworkManager.Singleton.IsHost;
 
-        public delegate void OnSetWindowState(bool open, bool locked);
+        public delegate void OnSetWindowState(bool closed, bool locked);
         public delegate void OnSetVolumeState(bool active);
 
-        public static OnSetWindowState SetWindowStateEvent;
-        public static OnSetVolumeState SetVolumeStateEvent;
+        public static event OnSetWindowState SetWindowStateEvent;
+        public static event OnSetVolumeState SetVolumeStateEvent;
 
         public static void RegisterMessages()
         {
+            ShipWindowPlugin.mls.LogInfo("Subscribing to ShipWindow events");
             MessageManager.RegisterNamedMessageHandler("ShipWindow_SetWindowState", ReceiveWindowState);
             MessageManager.RegisterNamedMessageHandler("ShipWindow_SetVolumeState", ReceiveVolumeState);
         }
 
         public static void UnregisterMessages()
         {
+            ShipWindowPlugin.mls.LogInfo("Unsubscribing from ShipWindow events");
             MessageManager.UnregisterNamedMessageHandler("ShipWindow_SetWindowState");
             MessageManager.UnregisterNamedMessageHandler("ShipWindow_SetVolumeState");
         }
 
-        public static void SetWindowState(bool open, bool locked)
+        public static void SetWindowState(bool closed, bool locked)
         {
             if (!IsHost)
             {
-                SetWindowStateEvent.Invoke(open, locked);
+                SetWindowStateEvent?.Invoke(closed, locked);
                 return;
             }
                 
@@ -42,7 +44,7 @@ namespace ShipWindows
 
             try
             {
-                stream.WriteValueSafe(open);
+                stream.WriteValueSafe(closed);
                 stream.WriteValueSafe(locked);
 
                 MessageManager.SendNamedMessageToAll("ShipWindow_SetWindowState", stream);
@@ -54,20 +56,20 @@ namespace ShipWindows
 
         private static void ReceiveWindowState(ulong _, FastBufferReader reader)
         {
-            bool open;
+            bool closed;
             bool locked;
 
-            reader.ReadValueSafe(out open);
+            reader.ReadValueSafe(out closed);
             reader.ReadValueSafe(out locked);
 
-            SetWindowStateEvent.Invoke(open, locked);
+            SetWindowStateEvent?.Invoke(closed, locked);
         }
 
         public static void SetVolumeState(bool active)
         {
             if (!IsHost)
             {
-                SetVolumeStateEvent.Invoke(active);
+                SetVolumeStateEvent?.Invoke(active);
                 return;
             } 
 
@@ -80,7 +82,7 @@ namespace ShipWindows
                 MessageManager.SendNamedMessageToAll("ShipWindow_SetVolumeState", stream);
             } catch (Exception e)
             {
-                ShipWindowPlugin.mls.LogError($"Error occurred sending window state message:\n{e}");
+                ShipWindowPlugin.mls.LogError($"Error occurred sending volume state message:\n{e}");
             }
         }
 
@@ -90,7 +92,7 @@ namespace ShipWindows
 
             reader.ReadValueSafe(out active);
 
-            SetVolumeStateEvent.Invoke(active);
+            SetVolumeStateEvent?.Invoke(active);
         }
     }
 }
