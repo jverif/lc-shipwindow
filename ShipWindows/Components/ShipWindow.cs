@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
 
-namespace ShipWindow
+namespace ShipWindows.Components
 {
     public class ShipWindow : MonoBehaviour
     {

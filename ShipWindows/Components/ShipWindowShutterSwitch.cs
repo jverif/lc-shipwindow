@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using Unity.Netcode;
 using UnityEngine;
 
-namespace ShipWindow
+namespace ShipWindows.Components
 {
     public class ShipWindowShutterSwitch : NetworkBehaviour
     {

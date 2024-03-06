@@ -12,32 +12,23 @@ using System.Text;
 using System.Threading.Tasks;
 using Unity.Netcode;
 using UnityEngine;
+using ShipWindows.Components;
+using GameNetcodeStuff;
 
-namespace ShipWindow
+namespace ShipWindows
 {
     [BepInPlugin(modGUID, modName, modVersion)]
     public class ShipWindowPlugin : BaseUnityPlugin
     {
         private const string modGUID = "veri.lc.shipwindow";
         private const string modName = "Ship Window";
-        private const string modVersion = "1.3.6";
+        private const string modVersion = "2.0.0";
 
         private readonly Harmony harmony = new Harmony(modGUID);
 
         public static ShipWindowPlugin Instance { get; private set; }
+        public static WindowConfig Cfg { get; internal set; }
         static internal ManualLogSource mls;
-
-        // Configuration, this is so bad lol
-        public static ConfigEntry<bool> enableShutter;
-        public static ConfigEntry<bool> hideSpaceProps;
-        public static ConfigEntry<int> spaceOutsideSetting;
-        public static ConfigEntry<bool> enableWindow1;
-        public static ConfigEntry<bool> enableWindow2;
-        public static ConfigEntry<bool> enableWindow3;
-        public static ConfigEntry<bool> disableUnderLights;
-        public static ConfigEntry<bool> dontMovePosters;
-        public static ConfigEntry<bool> rotateSkybox;
-        public static ConfigEntry<int> skyboxResolution;
 
         private static AssetBundle mainAssetBundle;
 
@@ -62,28 +53,28 @@ namespace ShipWindow
         {
             if (Instance == null) Instance = this;
             mls = BepInEx.Logging.Logger.CreateLogSource(modGUID);
+            Cfg = new(base.Config);
 
-            enableShutter = Config.Bind<bool>("General", "EnableWindowShutter", true, "Enable the window shutter to hide level transitions? (default = true)");
-            hideSpaceProps = Config.Bind<bool>("General", "HideSpaceProps", true, "Should the planet and moon outside the ship be hidden? (default = true)");
-            spaceOutsideSetting = Config.Bind<int>("General", "SpaceOutside", 1,
-                "Set this value to control how the outside space looks. (0 = Let other mods handle, 1 = Space HDRI Volume (default), 2 = Black sky with stars)");
-
-            enableWindow1 = Config.Bind<bool>("General", "EnableWindow1", true, "Enable the window to the right of the switch, behind the terminal.");
-            enableWindow2 = Config.Bind<bool>("General", "EnableWindow2", false, "Enable the window to the left of the switch, across from the first window.");
-            enableWindow3 = Config.Bind<bool>("General", "EnableWindow3", false, "Enable the large glass floor.");
-            
-            disableUnderLights = Config.Bind<bool>("General", "DisableUnderLights", false, "Disable the flood lights added under the ship if you have the floor window enabled.");
-            dontMovePosters = Config.Bind<bool>("General", "DontMovePosters", false, "Don't move the poster that blocks the second window if enabled.");
-            rotateSkybox = Config.Bind<bool>("General", "RotateSpaceSkybox", true, "Enable slow rotation of the space skybox for visual effect.");
-            skyboxResolution = Config.Bind<int>("General", "SkyboxResolution", 0, "Sets the skybox resolution (0 = 2K, 1 = 4K) 4K textures may cause performance issues.");
-
-            if (enableWindow1.Value == false && enableWindow2.Value == false && enableWindow3.Value == false)
+            if (WindowConfig.enableWindow1.Value == false && WindowConfig.enableWindow2.Value == false && WindowConfig.enableWindow3.Value == false)
             {
                 mls.LogWarning("All windows are disabled. Please enable any window in your settings for this mod to have any effect.");
                 return;
             }
 
-            mls.LogInfo($"Settings Shutter: {enableShutter.Value} | Hide Space Props: {hideSpaceProps.Value} | Space Outside: {spaceOutsideSetting.Value}");
+            mls.LogInfo($"Current settings:"
+                + $"    Shutters:       {WindowConfig.enableShutter}"
+                + $"    Space Props:    {WindowConfig.hideSpaceProps}"
+                + $"    Space Sky:      {WindowConfig.spaceOutsideSetting}"
+                + $"    Window 1:       {WindowConfig.enableWindow1}"
+                + $"    Window 2:       {WindowConfig.enableWindow2}"
+                + $"    Window 3:       {WindowConfig.enableWindow3}"
+                + $"    Bottom Lights:  {WindowConfig.disableUnderLights}"
+                + $"    Posters:        {WindowConfig.dontMovePosters}"
+                + $"    Sky Rotation:   {WindowConfig.rotateSkybox}"
+                + $"    Sky Resolution: {WindowConfig.skyboxResolution}"
+            );
+
+            
 
             if (!LoadAssetBundle())
             {
@@ -119,9 +110,9 @@ namespace ShipWindow
 
         static string GetShipAssetName()
         {
-            bool w1 = enableWindow1.Value;
-            bool w2 = enableWindow2.Value;
-            bool w3 = enableWindow3.Value;
+            bool w1 = WindowConfig.enableWindow1.Value;
+            bool w2 = WindowConfig.enableWindow2.Value;
+            bool w3 = WindowConfig.enableWindow3.Value;
             return $"ShipInsideWithWindow{(w1 ? 1 : 0)}{(w2 ? 1 : 0)}{(w3 ? 1 : 0)}";
         }
 
@@ -174,9 +165,6 @@ namespace ShipWindow
 
             GameObject winNetAsset = mainAssetBundle.LoadAsset<GameObject>("Assets/LethalCompany/Mods/ShipWindow/WindowNetworkManager.prefab");
             winNetAsset.AddComponent<ShipWindowNetworkManager>();
-            //winNetAsset.GetComponent<NetworkObject>().DontDestroyWithOwner = true;
-            //winNetAsset.GetComponent<NetworkObject>().SceneMigrationSynchronization = true;
-            //winNetAsset.GetComponent<NetworkObject>().DestroyWithScene = false;
             NetworkManager.Singleton.AddNetworkPrefab(winNetAsset);
 
             windowNetworkPrefab = winNetAsset;
@@ -252,7 +240,7 @@ namespace ShipWindow
 
             // Misc objects, TODO: Clean up, move to own function.
 
-            if (enableWindow2.Value == true && dontMovePosters.Value == false)
+            if (WindowConfig.enableWindow2.Value == true && WindowConfig.dontMovePosters.Value == false)
             {
                 GameObject movedPostersPrefab = mainAssetBundle.LoadAsset<GameObject>($"Assets/LethalCompany/Mods/ShipWindow/ShipPosters.prefab");
                 if (movedPostersPrefab != null)
@@ -272,8 +260,8 @@ namespace ShipWindow
                 }
             }
 
-            if (enableWindow3.Value == false) return;
-            mls.LogInfo($"Disabling misc objects under ship... {enableWindow3.Value}");
+            if (WindowConfig.enableWindow3.Value == false) return;
+            mls.LogInfo($"Disabling misc objects under ship... {WindowConfig.enableWindow3.Value}");
 
             foreach (string go in window3DisabledList)
             {
@@ -288,7 +276,7 @@ namespace ShipWindow
                 obj.gameObject.SetActive(false);
             }
 
-            if (disableUnderLights.Value == true)
+            if (WindowConfig.disableUnderLights.Value == true)
             {
                 mls.LogInfo("Disabling flood lights under ship...");
                 Transform floodLights = newShipInside.transform.Find("WindowContainer/Window3/Lights");
@@ -301,7 +289,7 @@ namespace ShipWindow
             GameObject renderingObject = GameObject.Find("Systems/Rendering");
             GameObject vanillaStarSphere = GameObject.Find("Systems/Rendering/StarsSphere");
 
-            switch (spaceOutsideSetting.Value)
+            switch (WindowConfig.spaceOutsideSetting.Value)
             {
                 // do nothing
                 case 0:
@@ -319,7 +307,7 @@ namespace ShipWindow
                     outsideSkybox.AddComponent<SpaceSkybox>();
 
                     // Load texture
-                    if (skyboxResolution.Value == 1) // 4K
+                    if (WindowConfig.skyboxResolution.Value == 1) // 4K
                     {
                         Texture2D skybox4K = mainAssetBundle.LoadAsset<Texture2D>("Assets/LethalCompany/Mods/ShipWindow/Textures/Space4KCube.png");
                         if (skybox4K != null)
@@ -350,7 +338,7 @@ namespace ShipWindow
 
         static void HideSpaceProps()
         {
-            if (hideSpaceProps.Value == true)
+            if (WindowConfig.hideSpaceProps.Value == true)
             {
                 GameObject spaceProps = GameObject.Find("Environment/SpaceProps");
                 if (spaceProps != null) spaceProps.SetActive(false);
@@ -389,16 +377,18 @@ namespace ShipWindow
 
         static void TrySetWindowClosed(bool closed, bool locked)
         {
-            if (enableShutter.Value == false) return;
+            if (WindowConfig.enableShutter.Value == false) return;
 
-            mls.LogInfo("Setting window closed: " + closed);
+            NetworkHandler.SetWindowState(closed, locked);
+
+            /*mls.LogInfo("Setting window closed: " + closed);
             if (ShipWindowNetworkManager.Instance != null)
             {
                 if (NetworkManager.Singleton.IsHost || NetworkManager.Singleton.IsServer)
                     ShipWindowNetworkManager.Instance.SetWindowStateClientRpc(closed, locked);
                 else
                     ShipWindowNetworkManager.Instance.SetWindowState(closed, locked);
-            }
+            }*/
         }
 
         static void RunCompatPatches()
@@ -424,6 +414,19 @@ namespace ShipWindow
         // ==============================================================================
         // Patches
         // ==============================================================================
+
+        [HarmonyPostfix, HarmonyPatch(typeof(PlayerControllerB), "ConnectClientToPlayerObject")]
+        static void InitializeLocalPlayer()
+        {
+            NetworkHandler.RegisterMessages();
+        }
+
+        [HarmonyPostfix, HarmonyPatch(typeof(GameNetworkManager), "StartDisconnect")]
+        static void PlayerLeave()
+        {
+            NetworkHandler.UnregisterMessages();
+        }
+
         [HarmonyPostfix, HarmonyPatch(typeof(StartOfRound), "LateUpdate")]
         static void Patch_RoundLateUpdate()
         {
@@ -467,6 +470,7 @@ namespace ShipWindow
         [HarmonyPostfix, HarmonyPatch(typeof(StartMatchLever), "StartGame")]
         static void Patch_StartGame()
         {
+            mls.LogInfo($"StartMatchLever.StartGame -> Is Host:{NetworkHandler.IsHost} / Is Client:{NetworkHandler.IsClient} ");
             TrySetWindowClosed(true, true);
         }
 
@@ -474,6 +478,7 @@ namespace ShipWindow
         [HarmonyPostfix, HarmonyPatch(typeof(RoundManager), "FinishGeneratingNewLevelClientRpc")]
         static void Patch_OpenDoorSequence()
         {
+            mls.LogInfo($"RoundManager.FinishGeneratingNewLevelClientRpc -> Is Host:{NetworkHandler.IsHost} / Is Client:{NetworkHandler.IsClient} ");
             if (windowCoroutine != null) StartOfRound.Instance.StopCoroutine(windowCoroutine);
             windowCoroutine = StartOfRound.Instance.StartCoroutine(OpenWindowCoroutine(2f));
         }
@@ -481,15 +486,17 @@ namespace ShipWindow
         [HarmonyPostfix, HarmonyPatch(typeof(RoundManager), "LoadNewLevel")]
         static void Patch_LoadNewLevel()
         {
+            mls.LogInfo($"RoundManager.LoadNewLevel -> Is Host:{NetworkHandler.IsHost} / Is Client:{NetworkHandler.IsClient} ");
+            NetworkHandler.SetVolumeState(false);
 
-            if (ShipWindowNetworkManager.Instance != null)
+            /*if (ShipWindowNetworkManager.Instance != null)
             {
                 mls.LogInfo("Disabling universe volume / star sphere.");
                 if (NetworkManager.Singleton.IsHost || NetworkManager.Singleton.IsServer)
                     ShipWindowNetworkManager.Instance.SetVolumeStateClientRpc(false);
                 else
                     ShipWindowNetworkManager.Instance.SetVolumeState(false);
-            }
+            }*/
         }
 
         [HarmonyPostfix, HarmonyPatch(typeof(StartOfRound), "ShipHasLeft")]
@@ -504,22 +511,23 @@ namespace ShipWindow
         [HarmonyPostfix, HarmonyPatch(typeof(RoundManager), "DespawnPropsAtEndOfRound")]
         static void Patch_DespawnProps()
         {
-            switch (spaceOutsideSetting.Value)
+            switch (WindowConfig.spaceOutsideSetting.Value)
             {
                 case 0: break;
 
                 case 1:
                 case 2:
-                    int dayNum = StartOfRound.Instance.gameStats.daysSpent;
-                    SpaceSkybox.Instance?.SetRotation(dayNum * 80f);
-                    outsideSkybox.SetActive(true);
+                    // If for whatever reason this code errors, the game breaks.
+                    int? dayNum = StartOfRound.Instance.gameStats?.daysSpent;
+                    SpaceSkybox.Instance?.SetRotation((dayNum ?? 1) * 80f);
+                    outsideSkybox?.SetActive(true);
                     break;
 
                 default: break;
             }
 
             GameObject spaceProps = GameObject.Find("Environment/SpaceProps");
-            if (spaceProps != null && hideSpaceProps.Value == true) spaceProps.SetActive(false);
+            if (spaceProps != null && WindowConfig.hideSpaceProps.Value == true) spaceProps.SetActive(false);
         }
 
         private static void NetcodePatcher()

@@ -20,6 +20,9 @@ Please report any issues on GitHub or in the #mod-releases thread in the Lethal 
 
 ## Update History
 
+- **2.0.0**
+    - Network rewrite
+
 - **1.3.6**
     - Fix a bug breaking the lever after the first day.
 

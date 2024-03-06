@@ -1,17 +1,16 @@
-﻿using ShipWindow;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Text;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.HighDefinition;
 
-namespace ShipWindow
+namespace ShipWindows.Components
 {
     public class SpaceSkybox : MonoBehaviour
     {
 
-        public static SpaceSkybox Instance {  get; private set; }
+        public static SpaceSkybox Instance { get; private set; }
 
         private HDRISky sky;
 
@@ -21,10 +20,10 @@ namespace ShipWindow
         {
             Instance = this;
         }
-        
+
         public void Start()
         {
-            switch (ShipWindowPlugin.spaceOutsideSetting.Value)
+            switch (WindowConfig.spaceOutsideSetting.Value)
             {
                 case 0: break;
                 case 1:
@@ -41,9 +40,9 @@ namespace ShipWindow
 
         public void Update()
         {
-            if (ShipWindowPlugin.rotateSkybox.Value == false) return;
+            if (WindowConfig.rotateSkybox.Value == false) return;
 
-            switch (ShipWindowPlugin.spaceOutsideSetting.Value)
+            switch (WindowConfig.spaceOutsideSetting.Value)
             {
                 case 0: break;
                 case 1:
@@ -63,7 +62,7 @@ namespace ShipWindow
 
         public void SetRotation(float r)
         {
-            switch (ShipWindowPlugin.spaceOutsideSetting.Value)
+            switch (WindowConfig.spaceOutsideSetting.Value)
             {
                 case 0: break;
                 case 1:
@@ -86,7 +85,7 @@ namespace ShipWindow
 
         public void SetSkyboxTexture(Texture2D skybox)
         {
-            switch (ShipWindowPlugin.spaceOutsideSetting.Value)
+            switch (WindowConfig.spaceOutsideSetting.Value)
             {
                 case 0: break;
                 case 1:

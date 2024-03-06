@@ -6,17 +6,18 @@ using System.Threading.Tasks;
 using Unity.Netcode;
 using UnityEngine;
 
-namespace ShipWindow
+namespace ShipWindows.Components
 {
     public class ShipWindowNetworkManager : NetworkBehaviour
     {
 
         private static ShipWindowNetworkManager _instance;
-        public static ShipWindowNetworkManager Instance {
+        public static ShipWindowNetworkManager Instance
+        {
             get
             {
                 if (_instance == null)
-                    _instance = UnityEngine.Object.FindObjectOfType<ShipWindowNetworkManager>();
+                    _instance = FindObjectOfType<ShipWindowNetworkManager>();
                 if (_instance == null)
                     ShipWindowPlugin.mls.LogWarning("ShipWindowNetworkManager could not be found! Returning null!");
                 return _instance;
@@ -56,10 +57,10 @@ namespace ShipWindow
             isWindowClosed = closed;
             isWindowLocked = locked;
 
-            if (ShipWindowPlugin.enableShutter.Value == true)
+            if (WindowConfig.enableShutter.Value == true)
             {
                 ShipWindow[] windows = FindObjectsByType<ShipWindow>(FindObjectsSortMode.None);
-                   
+
                 foreach (ShipWindow w in windows)
                     w.SetWindowState(closed);
 
@@ -67,7 +68,7 @@ namespace ShipWindow
                 //if (windowAnimator != null)
                 //    windowAnimator?.SetBool("Closed", closed);
             }
-               
+
         }
 
         public void ToggleWindowShutter()
