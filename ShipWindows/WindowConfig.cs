@@ -19,8 +19,8 @@ namespace ShipWindows
         {
             enableShutter =         cfg.Bind("General", "EnableWindowShutter", true, 
                 "Enable the window shutter to hide level transitions? (default = true)");
-            hideSpaceProps =        cfg.Bind("General", "HideSpaceProps", true, 
-                "Should the planet and moon outside the ship be hidden? (default = true)");
+            hideSpaceProps =        cfg.Bind("General", "HideSpaceProps", false, 
+                "Should the planet and moon outside the ship be hidden? (default = false)");
             spaceOutsideSetting =   cfg.Bind("General", "SpaceOutside", 1,
                 "Set this value to control how the outside space looks. (0 = Let other mods handle, 1 = Space HDRI Volume (default), 2 = Black sky with stars)");
 

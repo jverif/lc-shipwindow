@@ -11,7 +11,7 @@ namespace ShipWindows.Components
     public class ShipWindowNetworkManager : NetworkBehaviour
     {
 
-        private static ShipWindowNetworkManager _instance;
+        /*private static ShipWindowNetworkManager _instance;
         public static ShipWindowNetworkManager Instance
         {
             get
@@ -97,6 +97,6 @@ namespace ShipWindows.Components
                 case 2: starSphereLarge?.SetActive(enabled); break;
                 default: break;
             }*/
-        }
+        //}
     }
 }

@@ -10,14 +10,34 @@ namespace ShipWindows.Components
     public class ShipWindow : MonoBehaviour
     {
 
-        public static bool Closed { get; set; }
-        public static bool Locked {  get; set; }
+        public bool closed = false;
+        public bool locked = false;
 
-        public void SetWindowState(bool closed, bool locked)
+        public void SetClosed(bool closed)
         {
-            Closed = closed;
-            Locked = locked;
+            this.closed = closed;
             GetComponent<Animator>()?.SetBool("Closed", closed);
+        }
+
+        public void SetLocked(bool locked)
+        {
+            this.locked = locked;
+        }
+
+        public void OnEnable()
+        {
+            NetworkHandler.WindowSyncReceivedEvent += HandleWindowSync;
+        }
+
+        public void OnDisable()
+        {
+            NetworkHandler.WindowSyncReceivedEvent -= HandleWindowSync;
+        }
+
+        private void HandleWindowSync(WindowNetworkState state)
+        {
+            SetClosed(state.WindowsClosed);
+            SetLocked(state.WindowsLocked);
         }
     }
 }

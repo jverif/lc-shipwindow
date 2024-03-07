@@ -92,6 +92,8 @@ namespace ShipWindows
                 return;
             }
 
+            new WindowNetworkState();
+
             harmony.PatchAll(typeof(ShipWindowPlugin));
             mls.LogInfo("Loaded successfully!");
         }
@@ -410,7 +412,14 @@ namespace ShipWindows
                 ShipWindow[] windows = FindObjectsByType<ShipWindow>(FindObjectsSortMode.None);
 
                 foreach (ShipWindow w in windows)
-                    w.SetWindowState(closed, locked);
+                {
+                    w.SetClosed(closed);
+                    w.SetLocked(locked);
+                }
+                    
+
+                WindowNetworkState.Instance.WindowsClosed = closed;
+                WindowNetworkState.Instance.WindowsLocked = locked;
             }
         }
 
@@ -418,6 +427,13 @@ namespace ShipWindows
         {
             var outsideSkybox = ShipWindowPlugin.outsideSkybox;
             outsideSkybox?.SetActive(active);
+
+            WindowNetworkState.Instance.SpaceActive = active;
+        }
+
+        static void HandleWindowSyncEvent(WindowNetworkState state)
+        {
+            WindowNetworkState.Instance = state;
         }
 
         static IEnumerator OpenWindowCoroutine(float delay)
@@ -439,6 +455,7 @@ namespace ShipWindows
 
             NetworkHandler.SetVolumeStateEvent += HandleSetVolumeState;
             NetworkHandler.SetWindowStateEvent += HandleSetWindowState;
+            NetworkHandler.WindowSyncReceivedEvent += HandleWindowSyncEvent;
         }
 
         [HarmonyPostfix, HarmonyPatch(typeof(GameNetworkManager), "StartDisconnect")]
@@ -448,6 +465,7 @@ namespace ShipWindows
 
             NetworkHandler.SetVolumeStateEvent -= HandleSetVolumeState;
             NetworkHandler.SetWindowStateEvent -= HandleSetWindowState;
+            NetworkHandler.WindowSyncReceivedEvent -= HandleWindowSyncEvent;
         }
 
         [HarmonyPostfix, HarmonyPatch(typeof(StartOfRound), "LateUpdate")]

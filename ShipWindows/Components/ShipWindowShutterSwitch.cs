@@ -27,7 +27,7 @@ namespace ShipWindows.Components
 
         public void PlayerUsedSwitch(PlayerControllerB playerControllerB)
         {
-            FindFirstObjectByType<ShipWindowNetworkManager>().ToggleWindowShutter();
+            //FindFirstObjectByType<ShipWindowNetworkManager>().ToggleWindowShutter();
         }
     }
 }
