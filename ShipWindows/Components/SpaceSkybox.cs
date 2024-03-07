@@ -50,13 +50,13 @@ namespace ShipWindows.Components
 
                     sky.rotation.value += Time.deltaTime * 0.1f;
                     if (sky.rotation.value >= 360) sky.rotation.value = 0f;
-                    WindowNetworkState.Instance.VolumeRotation = sky.rotation.value;
+                    WindowState.Instance.VolumeRotation = sky.rotation.value;
                     break;
                 case 2:
                     if (starSphere == null) break;
 
                     starSphere.Rotate(Vector3.forward * Time.deltaTime * 0.1f);
-                    WindowNetworkState.Instance.VolumeRotation = starSphere.eulerAngles.y;
+                    WindowState.Instance.VolumeRotation = starSphere.eulerAngles.y;
                     break;
                 default: break;
             }
@@ -74,14 +74,14 @@ namespace ShipWindows.Components
                     if (rClamped < 0f) rClamped += 360f;
 
                     sky.rotation.value = rClamped;
-                    WindowNetworkState.Instance.VolumeRotation = sky.rotation.value;
+                    WindowState.Instance.VolumeRotation = sky.rotation.value;
                     break;
                 case 2:
                     if (starSphere == null) break;
 
                     starSphere.rotation = Quaternion.identity;
                     starSphere.Rotate(Vector3.forward * r);
-                    WindowNetworkState.Instance.VolumeRotation = starSphere.eulerAngles.y;
+                    WindowState.Instance.VolumeRotation = starSphere.eulerAngles.y;
                     break;
                 default: break;
             }
@@ -111,7 +111,7 @@ namespace ShipWindows.Components
             NetworkHandler.WindowSyncReceivedEvent -= HandleWindowSync;
         }
 
-        private void HandleWindowSync(WindowNetworkState state)
+        private void HandleWindowSync(WindowState state)
         {
             SetRotation(state.VolumeRotation);
         }

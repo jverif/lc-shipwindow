@@ -6,9 +6,9 @@ using UnityEngine;
 namespace ShipWindows
 {
     [Serializable]
-    internal class WindowNetworkState
+    internal class WindowState
     {
-        public static WindowNetworkState Instance { get; set; }
+        public static WindowState Instance { get; set; }
 
         public bool WindowsClosed = false;
         public bool WindowsLocked = false;
@@ -20,7 +20,7 @@ namespace ShipWindows
         public bool Window2Active = false; // Right
         public bool Window3Active = false; // Floor
 
-        public WindowNetworkState()
+        public WindowState()
         {
             Instance = this;
         }

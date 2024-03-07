@@ -11,17 +11,11 @@ namespace ShipWindows.Components
     {
 
         public bool closed = false;
-        public bool locked = false;
 
         public void SetClosed(bool closed)
         {
             this.closed = closed;
             GetComponent<Animator>()?.SetBool("Closed", closed);
-        }
-
-        public void SetLocked(bool locked)
-        {
-            this.locked = locked;
         }
 
         public void OnEnable()
@@ -34,10 +28,9 @@ namespace ShipWindows.Components
             NetworkHandler.WindowSyncReceivedEvent -= HandleWindowSync;
         }
 
-        private void HandleWindowSync(WindowNetworkState state)
+        private void HandleWindowSync(WindowState state)
         {
             SetClosed(state.WindowsClosed);
-            SetLocked(state.WindowsLocked);
         }
     }
 }

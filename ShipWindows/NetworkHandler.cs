@@ -17,7 +17,7 @@ namespace ShipWindows
 
         public delegate void OnSetWindowState(bool closed, bool locked);
         public delegate void OnSetVolumeState(bool active);
-        public delegate void OnWindowSyncReceive(WindowNetworkState state);
+        public delegate void OnWindowSyncReceive(WindowState state);
 
         public static event OnSetWindowState SetWindowStateEvent;
         public static event OnSetVolumeState SetVolumeStateEvent;
@@ -112,7 +112,7 @@ namespace ShipWindows
         {
             if (!IsHost) return;
 
-            byte[] arr = SerializeToBytes(WindowNetworkState.Instance);
+            byte[] arr = SerializeToBytes(WindowState.Instance);
             int len = arr.Length;
             int IntSize = sizeof(int);
 
@@ -160,7 +160,8 @@ namespace ShipWindows
             byte[] data = new byte[len];
             reader.ReadBytesSafe(ref data, len);
 
-            WindowNetworkState state = DeserializeFromBytes<WindowNetworkState>(data);
+            WindowState state = DeserializeFromBytes<WindowState>(data);
+            WindowState.Instance = state;
 
             WindowSyncReceivedEvent?.Invoke(state);
 

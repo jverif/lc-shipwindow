@@ -1,15 +1,10 @@
 ﻿using BepInEx;
-using BepInEx.Configuration;
 using BepInEx.Logging;
 using HarmonyLib;
 using System;
 using System.Collections;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
 using Unity.Netcode;
 using UnityEngine;
 using ShipWindows.Components;
@@ -33,7 +28,6 @@ namespace ShipWindows
         private static AssetBundle mainAssetBundle;
 
         // Prefabs
-        private static GameObject windowNetworkPrefab;
         private static GameObject windowSwitchPrefab;
 
         // Spawned objects
@@ -92,7 +86,7 @@ namespace ShipWindows
                 return;
             }
 
-            new WindowNetworkState();
+            new WindowState();
 
             harmony.PatchAll(typeof(ShipWindowPlugin));
             mls.LogInfo("Loaded successfully!");
@@ -163,13 +157,6 @@ namespace ShipWindows
         [HarmonyPostfix, HarmonyPatch(typeof(GameNetworkManager), "Start")]
         static void Patch_NetworkStart()
         {
-            if (windowNetworkPrefab != null) return;
-
-            GameObject winNetAsset = mainAssetBundle.LoadAsset<GameObject>("Assets/LethalCompany/Mods/ShipWindow/WindowNetworkManager.prefab");
-            winNetAsset.AddComponent<ShipWindowNetworkManager>();
-            NetworkManager.Singleton.AddNetworkPrefab(winNetAsset);
-
-            windowNetworkPrefab = winNetAsset;
 
             GameObject shutterSwitchAsset = mainAssetBundle.LoadAsset<GameObject>("Assets/LethalCompany/Mods/ShipWindow/WindowShutterSwitch.prefab");
             shutterSwitchAsset.AddComponent<ShipWindowShutterSwitch>();
@@ -351,9 +338,9 @@ namespace ShipWindows
         {
             if (NetworkManager.Singleton.IsHost || NetworkManager.Singleton.IsServer)
             {
-                mls.LogInfo("Spawning network window...");
-                GameObject windowManagerInstance = Instantiate(windowNetworkPrefab);
-                windowManagerInstance.GetComponent<NetworkObject>().Spawn();
+                //mls.LogInfo("Spawning network window...");
+                //GameObject windowManagerInstance = Instantiate(windowNetworkPrefab);
+                //windowManagerInstance.GetComponent<NetworkObject>().Spawn();
             }
         }
 
@@ -412,14 +399,10 @@ namespace ShipWindows
                 ShipWindow[] windows = FindObjectsByType<ShipWindow>(FindObjectsSortMode.None);
 
                 foreach (ShipWindow w in windows)
-                {
-                    w.SetClosed(closed);
-                    w.SetLocked(locked);
-                }
-                    
+                    w.SetClosed(closed); 
 
-                WindowNetworkState.Instance.WindowsClosed = closed;
-                WindowNetworkState.Instance.WindowsLocked = locked;
+                WindowState.Instance.WindowsClosed = closed;
+                WindowState.Instance.WindowsLocked = locked;
             }
         }
 
@@ -428,15 +411,16 @@ namespace ShipWindows
             var outsideSkybox = ShipWindowPlugin.outsideSkybox;
             outsideSkybox?.SetActive(active);
 
-            WindowNetworkState.Instance.SpaceActive = active;
+            WindowState.Instance.SpaceActive = active;
         }
 
-        static void HandleWindowSyncEvent(WindowNetworkState state)
+        public static void OpenWindowDelayed(float delay)
         {
-            WindowNetworkState.Instance = state;
+            if (windowCoroutine != null) StartOfRound.Instance.StopCoroutine(windowCoroutine);
+            windowCoroutine = StartOfRound.Instance.StartCoroutine(OpenWindowCoroutine(delay));
         }
 
-        static IEnumerator OpenWindowCoroutine(float delay)
+        private static IEnumerator OpenWindowCoroutine(float delay)
         {
             mls.LogInfo("Opening window in " + delay + " seconds...");
             yield return new WaitForSeconds(delay);
@@ -449,23 +433,21 @@ namespace ShipWindows
         // ==============================================================================
 
         [HarmonyPostfix, HarmonyPatch(typeof(PlayerControllerB), "ConnectClientToPlayerObject")]
-        static void InitializeLocalPlayer()
+        static void Patch_InitializeLocalPlayer()
         {
             NetworkHandler.RegisterMessages();
 
             NetworkHandler.SetVolumeStateEvent += HandleSetVolumeState;
             NetworkHandler.SetWindowStateEvent += HandleSetWindowState;
-            NetworkHandler.WindowSyncReceivedEvent += HandleWindowSyncEvent;
         }
 
         [HarmonyPostfix, HarmonyPatch(typeof(GameNetworkManager), "StartDisconnect")]
-        static void PlayerLeave()
+        static void Patch_PlayerLeave()
         {
             NetworkHandler.UnregisterMessages();
 
             NetworkHandler.SetVolumeStateEvent -= HandleSetVolumeState;
             NetworkHandler.SetWindowStateEvent -= HandleSetWindowState;
-            NetworkHandler.WindowSyncReceivedEvent -= HandleWindowSyncEvent;
         }
 
         [HarmonyPostfix, HarmonyPatch(typeof(StartOfRound), "LateUpdate")]
@@ -520,8 +502,7 @@ namespace ShipWindows
         static void Patch_OpenDoorSequence()
         {
             mls.LogInfo($"RoundManager.FinishGeneratingNewLevelClientRpc -> Is Host:{NetworkHandler.IsHost} / Is Client:{NetworkHandler.IsClient} ");
-            if (windowCoroutine != null) StartOfRound.Instance.StopCoroutine(windowCoroutine);
-            windowCoroutine = StartOfRound.Instance.StartCoroutine(OpenWindowCoroutine(2f));
+            OpenWindowDelayed(2f);
         }
 
         [HarmonyPostfix, HarmonyPatch(typeof(RoundManager), "LoadNewLevel")]
@@ -544,9 +525,7 @@ namespace ShipWindows
         static void Patch_ShipHasLeft()
         {
             TrySetWindowClosed(true, true);
-
-            if (windowCoroutine != null) StartOfRound.Instance.StopCoroutine(windowCoroutine);
-            windowCoroutine = StartOfRound.Instance.StartCoroutine(OpenWindowCoroutine(5f));
+            OpenWindowDelayed(5f);
         }
 
         [HarmonyPostfix, HarmonyPatch(typeof(RoundManager), "DespawnPropsAtEndOfRound")]
