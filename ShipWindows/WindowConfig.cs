@@ -14,15 +14,17 @@ namespace ShipWindows
         public static ConfigEntry<int> skyboxResolution;
 
         public static ConfigEntry<bool> windowsUnlockable;
+        public static ConfigEntry<int> window1Cost;
+        public static ConfigEntry<int> window2Cost;
+        public static ConfigEntry<int> window3Cost;
 
-        // TODO: Prune
         public static ConfigEntry<bool> enableWindow1;
         public static ConfigEntry<bool> enableWindow2;
         public static ConfigEntry<bool> enableWindow3;
 
         public WindowConfig(ConfigFile cfg)
         {
-            vanillaMode = cfg.Bind("General", "VanillaMode", true,
+            vanillaMode = cfg.Bind("General", "VanillaMode", false,
                 "Enable this to preserve vanilla network compatability. This will disable unlockables and the shutter toggle switch. (default = false)");
             enableShutter =         cfg.Bind("General", "EnableWindowShutter", true, 
                 "Enable the window shutter to hide transitions between space and the current moon. (default = true)");
@@ -42,6 +44,12 @@ namespace ShipWindows
 
             windowsUnlockable = cfg.Bind("General", "WindowsUnlockable", true,
                 "Adds the windows to the terminal as ship upgrades. Set this to false and use below settings to have them enabled by default.");
+            window1Cost = cfg.Bind("General", "Window1Cost", 60,
+                "The base cost of the window behind the terminal / right of the switch.");
+            window2Cost = cfg.Bind("General", "Window2Cost", 60,
+                "The base cost of the window across from the terminal / left of the switch.");
+            window3Cost = cfg.Bind("General", "Window3Cost", 100,
+                "The base cost of the window on the floor");
 
             // If windows are set to not be purchasable...
             enableWindow1 = cfg.Bind("General", "EnableWindow1", true,

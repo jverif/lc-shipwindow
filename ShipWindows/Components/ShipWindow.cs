@@ -10,6 +10,8 @@ namespace ShipWindows.Components
 {
     public class ShipWindow : MonoBehaviour
     {
+        public int ID;
+
         public void SetClosed(bool closed)
         {
             GetComponent<Animator>()?.SetBool("Closed", closed);

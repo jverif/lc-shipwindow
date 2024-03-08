@@ -11,6 +11,7 @@ using ShipWindows.Components;
 using GameNetcodeStuff;
 using ShipWindows.Utilities;
 using ShipWindows.Networking;
+using System.Collections.Generic;
 
 namespace ShipWindows
 {
@@ -27,20 +28,20 @@ namespace ShipWindows
         public static WindowConfig Cfg { get; internal set; }
         static internal ManualLogSource mls;
 
-        private static AssetBundle mainAssetBundle;
+        public static AssetBundle mainAssetBundle;
 
         // Game Objects
         private static GameObject vanillaShipInside;
 
         // Prefabs
         private static GameObject windowSwitchPrefab;
+        private static Dictionary<int, ShipWindowDef> windowRegistry = new();
 
         // Spawned objects
         public static GameObject newShipInside;
         public static GameObject outsideSkybox;
 
         // Various
-        public static int switchUnlockableID;
         private static Coroutine windowCoroutine;
 
         public static string[] window3DisabledList = [
@@ -61,6 +62,7 @@ namespace ShipWindows
             }
 
             mls.LogInfo($"\nCurrent settings:\n"
+                + $"    Vanilla Mode:       {WindowConfig.vanillaMode.Value}\n"
                 + $"    Shutters:           {WindowConfig.enableShutter.Value}\n"
                 + $"    Hide Space Props:   {WindowConfig.hideSpaceProps.Value}\n"
                 + $"    Space Sky:          {WindowConfig.spaceOutsideSetting.Value}\n"
@@ -95,6 +97,8 @@ namespace ShipWindows
 
             new WindowState();
 
+            RegisterWindows();
+
             harmony.PatchAll(typeof(ShipWindowPlugin));
             mls.LogInfo("Loaded successfully!");
         }
@@ -113,10 +117,19 @@ namespace ShipWindows
 
         static string GetShipAssetName()
         {
-            bool w1 = WindowConfig.enableWindow1.Value;
-            bool w2 = WindowConfig.enableWindow2.Value;
-            bool w3 = WindowConfig.enableWindow3.Value;
-            return $"ShipInsideWithWindow{(w1 ? 1 : 0)}{(w2 ? 1 : 0)}{(w3 ? 1 : 0)}";
+            if (WindowConfig.windowsUnlockable.Value == true && WindowConfig.vanillaMode.Value == false)
+            {
+                bool w1 = WindowState.Instance.Window1Active;
+                bool w2 = WindowState.Instance.Window2Active;
+                bool w3 = WindowState.Instance.Window3Active;
+                return $"ShipInsideWithWindow{(w1 ? 1 : 0)}{(w2 ? 1 : 0)}{(w3 ? 1 : 0)}";
+            } else
+            {
+                bool w1 = WindowConfig.enableWindow1.Value;
+                bool w2 = WindowConfig.enableWindow2.Value;
+                bool w3 = WindowConfig.enableWindow3.Value;
+                return $"ShipInsideWithWindow{(w1 ? 1 : 0)}{(w2 ? 1 : 0)}{(w3 ? 1 : 0)}";
+            }
         }
 
         static GameObject FindOrThrow(string name)
@@ -125,40 +138,6 @@ namespace ShipWindows
             if (!gameObject) throw new Exception($"Could not find {name}! Wrong scene?");
 
             return gameObject;
-        }
-
-        static int AddSwitchToUnlockables()
-        {
-            string name = "Shutter Switch";
-            UnlockablesList unlockablesList = StartOfRound.Instance.unlockablesList;
-
-            // When running in unity editor this function permanently edits the unlockables list.
-            // To keep from duplicating a ton, check if the unlockable is already there and use it's ID instead.
-
-            int index = unlockablesList.unlockables.FindIndex(unlockable => unlockable.unlockableName == name);
-
-            if (index == -1)
-            {
-                UnlockableItem sw = new UnlockableItem();
-                sw.unlockableName = name;
-                sw.spawnPrefab = false;
-                sw.unlockableType = 1;
-                sw.IsPlaceable = true;
-                sw.maxNumber = 1;
-                sw.canBeStored = false;
-                sw.alreadyUnlocked = true;
-
-                unlockablesList.unlockables.Capacity++;
-                unlockablesList.unlockables.Add(sw);
-                switchUnlockableID = unlockablesList.unlockables.FindIndex(unlockable => unlockable.unlockableName == name);
-            } else
-            {
-                switchUnlockableID = index;
-            }
-
-            mls.LogInfo($"Added shutter switch to unlockables list at ID {switchUnlockableID}");
-
-            return switchUnlockableID;
         }
 
         [HarmonyPostfix, HarmonyPatch(typeof(GameNetworkManager), "Start")]
@@ -173,12 +152,22 @@ namespace ShipWindows
             windowSwitchPrefab = shutterSwitchAsset;
         }
 
+        [HarmonyPostfix, HarmonyPatch(typeof(Terminal), "Awake")]
+        static void Patch_TerminalAwake(Terminal __instance)
+        {
+            if (WindowConfig.vanillaMode.Value == true) return;
+
+            foreach (var entry in windowRegistry)
+            {
+                Unlockables.AddWindowToUnlockables(__instance, entry.Value);
+            }
+        }
+
         [HarmonyPostfix, HarmonyPatch(typeof(StartOfRound), "Awake")]
         static void Patch_RoundAwake()
         {
             try
             {
-
                 ReplaceShip();
                 AddStars();
                 HideSpaceProps();
@@ -211,7 +200,33 @@ namespace ShipWindows
             if (container == null) return;
 
             foreach (Transform window in container)
-                window.gameObject.AddComponent<ShipWindow>();
+            {
+                int id;
+                if (int.TryParse(window.gameObject.name[window.name.Length - 1].ToString(), out id)) {
+                    window.gameObject.AddComponent<ShipWindow>().ID = id;
+                }
+            }
+        }
+
+        static int GetWindowBaseCost(int id)
+        {
+            switch(id)
+            {
+                case 1: return WindowConfig.window1Cost.Value;
+                case 2: return WindowConfig.window2Cost.Value;
+                case 3: return WindowConfig.window3Cost.Value;
+            }
+
+            return 60; // Shouldn't happen, but just in case.
+        }
+        
+        static void RegisterWindows()
+        {
+            for (int id = 1; id <= 3; id++)
+            {
+                ShipWindowDef def = ShipWindowDef.Register(id, GetWindowBaseCost(id));
+                windowRegistry.Add(id, def);
+            }
         }
 
         static void ReplaceShip()
@@ -341,7 +356,7 @@ namespace ShipWindows
         {
             if (windowSwitchPrefab != null)
             {
-                int id = AddSwitchToUnlockables();
+                int id = Unlockables.AddSwitchToUnlockables();
                 var shipObject = windowSwitchPrefab.GetComponentInChildren<PlaceableShipObject>();
                 shipObject.unlockableID = id;
             }
