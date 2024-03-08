@@ -18,10 +18,16 @@ namespace ShipWindows.Networking
         public delegate void OnWindowSyncReceive();
         public static event OnWindowSyncReceive WindowSyncReceivedEvent;
 
+        public delegate void OnWindowSwitchToggled();
+        public static event OnWindowSwitchToggled WindowSwitchToggledEvent;
+
         public static void RegisterMessages()
         {
             ShipWindowPlugin.mls.LogInfo("Registering network message handlers...");
             MessageManager.RegisterNamedMessageHandler("ShipWindow_WindowSyncResponse", ReceiveWindowSync);
+
+            MessageManager.RegisterNamedMessageHandler("ShipWindow_WindowSwitchUsed", ReceiveWindowSwitchUsed_Server);
+            MessageManager.RegisterNamedMessageHandler("ShipWindow_WindowSwitchUsedBroadcast", ReceiveWindowSwitchUsed_Client);
 
             if (IsHost)
             {
@@ -34,6 +40,43 @@ namespace ShipWindows.Networking
             ShipWindowPlugin.mls.LogInfo("Unregistering network message handlers...");
             MessageManager.UnregisterNamedMessageHandler("ShipWindow_WindowSyncResponse");
             MessageManager.UnregisterNamedMessageHandler("ShipWindow_WindowSyncRequest");
+
+            MessageManager.UnregisterNamedMessageHandler("ShipWindow_WindowSwitchUsed");
+            MessageManager.UnregisterNamedMessageHandler("ShipWindow_WindowSwitchUsedBroadcast");
+        }
+
+        public static void WindowSwitchUsed(bool currentState)
+        {
+            using FastBufferWriter stream = new(1, Allocator.Temp);
+            stream.WriteValueSafe(currentState);
+
+            ShipWindowPlugin.mls.LogInfo("Sending window switch toggle message...");
+
+            MessageManager.SendNamedMessage("ShipWindow_WindowSwitchUsed", 0ul, stream);
+        }
+
+        public static void ReceiveWindowSwitchUsed_Server(ulong clientId, FastBufferReader reader)
+        {
+
+            bool currentState;
+            reader.ReadValueSafe(out currentState);
+
+            using FastBufferWriter stream = new(1, Allocator.Temp);
+            stream.WriteValueSafe(currentState);
+
+            ShipWindowPlugin.mls.LogInfo($"Received window switch toggle message from client {clientId}");
+
+            MessageManager.SendNamedMessageToAll("ShipWindow_WindowSwitchUsedBroadcast", stream);
+        }
+
+        public static void ReceiveWindowSwitchUsed_Client(ulong _, FastBufferReader reader)
+        {
+            bool currentState;
+            reader.ReadValueSafe(out currentState);
+
+            ShipWindowPlugin.mls.LogInfo("Received window switch toggle message from server...");
+
+            WindowState.Instance.SetWindowState(!currentState, WindowState.Instance.WindowsLocked);
         }
 
         private static void ReceiveWindowSyncRequest(ulong clientId, FastBufferReader reader)
@@ -65,6 +108,8 @@ namespace ShipWindows.Networking
         {
             if (!IsClient) return;
 
+            ShipWindowPlugin.mls.LogInfo("Requesting WindowState sync...");
+
             using FastBufferWriter stream = new(1, Allocator.Temp);
             MessageManager.SendNamedMessage("ShipWindow_WindowSyncRequest", 0ul, stream);
         }
@@ -93,6 +138,8 @@ namespace ShipWindows.Networking
 
             WindowState state = DeserializeFromBytes<WindowState>(data);
             WindowState.Instance = state;
+
+            ShipWindowPlugin.mls.LogInfo($"{state.WindowsClosed}, {state.WindowsLocked}, {state.VolumeActive}, {state.VolumeRotation}");
 
             WindowSyncReceivedEvent?.Invoke();
 

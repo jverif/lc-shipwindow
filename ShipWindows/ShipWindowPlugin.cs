@@ -67,8 +67,8 @@ namespace ShipWindows
                 + $"    Bottom Lights:      {WindowConfig.disableUnderLights.Value}\n"
                 + $"    Posters:            {WindowConfig.dontMovePosters.Value}\n"
                 + $"    Sky Rotation:       {WindowConfig.rotateSkybox.Value}\n"
-                + $"    Sky Resolution:     {WindowConfig.skyboxResolution.Value}"
-                + $"    Windows Unlockable: {WindowConfig.windowsUnlockable.Value}"
+                + $"    Sky Resolution:     {WindowConfig.skyboxResolution.Value}\n"
+                + $"    Windows Unlockable: {WindowConfig.windowsUnlockable.Value}\n"
 
                 + $"    Window 1 Enabled:   {WindowConfig.enableWindow1.Value}\n"
                 + $"    Window 2 Enabled:   {WindowConfig.enableWindow2.Value}\n"
@@ -164,6 +164,7 @@ namespace ShipWindows
         [HarmonyPostfix, HarmonyPatch(typeof(GameNetworkManager), "Start")]
         static void Patch_NetworkStart()
         {
+            if (WindowConfig.vanillaMode.Value == true) return;
 
             GameObject shutterSwitchAsset = mainAssetBundle.LoadAsset<GameObject>("Assets/LethalCompany/Mods/ShipWindow/WindowShutterSwitch.prefab");
             shutterSwitchAsset.AddComponent<ShipWindowShutterSwitch>();
@@ -368,28 +369,6 @@ namespace ShipWindows
             }
         }
 
-        static void HandleSetWindowState(bool closed, bool locked)
-        {
-            if (WindowConfig.enableShutter.Value == true)
-            {
-                ShipWindow[] windows = FindObjectsByType<ShipWindow>(FindObjectsSortMode.None);
-
-                foreach (ShipWindow w in windows)
-                    w.SetClosed(closed); 
-
-                WindowState.Instance.WindowsClosed = closed;
-                WindowState.Instance.WindowsLocked = locked;
-            }
-        }
-
-        static void HandleSetVolumeState(bool active)
-        {
-            var outsideSkybox = ShipWindowPlugin.outsideSkybox;
-            outsideSkybox?.SetActive(active);
-
-            WindowState.Instance.VolumeActive = active;
-        }
-
         public static void OpenWindowDelayed(float delay)
         {
             if (windowCoroutine != null) StartOfRound.Instance.StopCoroutine(windowCoroutine);
@@ -404,6 +383,11 @@ namespace ShipWindows
             windowCoroutine = null;
         }
 
+        private static void HandleWindowSync()
+        {
+            WindowState.Instance.ReceiveSync();
+        }
+
         // ==============================================================================
         // Patches
         // ==============================================================================
@@ -412,16 +396,19 @@ namespace ShipWindows
         static void Patch_InitializeLocalPlayer()
         {
             NetworkHandler.RegisterMessages();
+            NetworkHandler.WindowSyncReceivedEvent += HandleWindowSync;
 
-            NetworkHandler.WindowSyncReceivedEvent += WindowState.Instance.ReceiveSync;
+            if (!NetworkHandler.IsHost)
+            {
+                NetworkHandler.RequestWindowSync();
+            }
         }
 
         [HarmonyPostfix, HarmonyPatch(typeof(GameNetworkManager), "StartDisconnect")]
         static void Patch_PlayerLeave()
         {
             NetworkHandler.UnregisterMessages();
-
-            NetworkHandler.WindowSyncReceivedEvent -= WindowState.Instance.ReceiveSync;
+            NetworkHandler.WindowSyncReceivedEvent -= HandleWindowSync;
         }
 
         [HarmonyPostfix, HarmonyPatch(typeof(StartOfRound), "LateUpdate")]
@@ -519,7 +506,11 @@ namespace ShipWindows
         static void Patch_ResetShip()
         {
             mls.LogInfo($"StartOfRound.ResetShip -> Is Host:{NetworkHandler.IsHost} / Is Client:{NetworkHandler.IsClient} ");
-            ObjectReplacer.Restore(vanillaShipInside);
+
+            if (WindowConfig.windowsUnlockable.Value == true && WindowConfig.vanillaMode.Value == false)
+            {
+                ObjectReplacer.Restore(vanillaShipInside);
+            }
         }
 
         private static void NetcodePatcher()

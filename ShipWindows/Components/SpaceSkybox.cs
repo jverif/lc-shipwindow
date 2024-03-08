@@ -101,20 +101,5 @@ namespace ShipWindows.Components
                 default: break;
             }
         }
-
-        public void OnEnable()
-        {
-            NetworkHandler.WindowSyncReceivedEvent += HandleWindowSync;
-        }
-
-        public void OnDisable()
-        {
-            NetworkHandler.WindowSyncReceivedEvent -= HandleWindowSync;
-        }
-
-        private void HandleWindowSync(WindowState state)
-        {
-            SetRotation(state.VolumeRotation);
-        }
     }
 }
