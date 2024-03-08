@@ -9,6 +9,8 @@ using Unity.Netcode;
 using UnityEngine;
 using ShipWindows.Components;
 using GameNetcodeStuff;
+using ShipWindows.Utilities;
+using ShipWindows.Networking;
 
 namespace ShipWindows
 {
@@ -26,6 +28,9 @@ namespace ShipWindows
         static internal ManualLogSource mls;
 
         private static AssetBundle mainAssetBundle;
+
+        // Game Objects
+        private static GameObject vanillaShipInside;
 
         // Prefabs
         private static GameObject windowSwitchPrefab;
@@ -56,16 +61,18 @@ namespace ShipWindows
             }
 
             mls.LogInfo($"\nCurrent settings:\n"
-                + $"    Shutters:       {WindowConfig.enableShutter.Value}\n"
-                + $"    Space Props:    {WindowConfig.hideSpaceProps.Value}\n"
-                + $"    Space Sky:      {WindowConfig.spaceOutsideSetting.Value}\n"
-                + $"    Window 1:       {WindowConfig.enableWindow1.Value}\n"
-                + $"    Window 2:       {WindowConfig.enableWindow2.Value}\n"
-                + $"    Window 3:       {WindowConfig.enableWindow3.Value}\n"
-                + $"    Bottom Lights:  {WindowConfig.disableUnderLights.Value}\n"
-                + $"    Posters:        {WindowConfig.dontMovePosters.Value}\n"
-                + $"    Sky Rotation:   {WindowConfig.rotateSkybox.Value}\n"
-                + $"    Sky Resolution: {WindowConfig.skyboxResolution.Value}"
+                + $"    Shutters:           {WindowConfig.enableShutter.Value}\n"
+                + $"    Hide Space Props:   {WindowConfig.hideSpaceProps.Value}\n"
+                + $"    Space Sky:          {WindowConfig.spaceOutsideSetting.Value}\n"
+                + $"    Bottom Lights:      {WindowConfig.disableUnderLights.Value}\n"
+                + $"    Posters:            {WindowConfig.dontMovePosters.Value}\n"
+                + $"    Sky Rotation:       {WindowConfig.rotateSkybox.Value}\n"
+                + $"    Sky Resolution:     {WindowConfig.skyboxResolution.Value}"
+                + $"    Windows Unlockable: {WindowConfig.windowsUnlockable.Value}"
+
+                + $"    Window 1 Enabled:   {WindowConfig.enableWindow1.Value}\n"
+                + $"    Window 2 Enabled:   {WindowConfig.enableWindow2.Value}\n"
+                + $"    Window 3 Enabled:   {WindowConfig.enableWindow3.Value}\n"
             );
 
             
@@ -208,7 +215,7 @@ namespace ShipWindows
 
         static void ReplaceShip()
         {
-            GameObject vanillaShipInside = FindOrThrow("Environment/HangarShip/ShipInside");
+            vanillaShipInside = FindOrThrow("Environment/HangarShip/ShipInside");
 
             string shipName = GetShipAssetName();
 
@@ -217,15 +224,7 @@ namespace ShipWindows
 
             AddWindowScripts(newShipPrefab);
 
-            newShipInside = Instantiate(newShipPrefab, vanillaShipInside.transform.parent);
-            newShipInside.transform.position = vanillaShipInside.transform.position;
-            newShipInside.transform.rotation = vanillaShipInside.transform.rotation;
-            newShipInside.SetActive(true);
-            vanillaShipInside.SetActive(false);
-
-            // Rename objects
-            vanillaShipInside.name = "ShipInside (Old)";
-            newShipInside.name = "ShipInside";
+            newShipInside = ObjectReplacer.Replace(vanillaShipInside, newShipPrefab);
 
             // Misc objects, TODO: Clean up, move to own function.
 
@@ -237,14 +236,7 @@ namespace ShipWindows
                     Transform oldPosters = newShipInside.transform.parent.Find("Plane.001");
                     if (oldPosters != null)
                     {
-                        GameObject newPosters = Instantiate(movedPostersPrefab, newShipInside.transform.parent);
-                        newPosters.transform.position = oldPosters.transform.position;
-                        newPosters.transform.rotation = oldPosters.transform.rotation;
-
-                        oldPosters.name = "Plane.001 (Old)";
-                        newPosters.name = "Plane.001";
-
-                        oldPosters.gameObject.SetActive(false);
+                        ObjectReplacer.Replace(oldPosters.gameObject, movedPostersPrefab);
                     }
                 }
             }
@@ -364,22 +356,6 @@ namespace ShipWindows
             }
         }
 
-        static void TrySetWindowClosed(bool closed, bool locked)
-        {
-            if (WindowConfig.enableShutter.Value == false) return;
-
-            NetworkHandler.SetWindowState(closed, locked);
-
-            /*mls.LogInfo("Setting window closed: " + closed);
-            if (ShipWindowNetworkManager.Instance != null)
-            {
-                if (NetworkManager.Singleton.IsHost || NetworkManager.Singleton.IsServer)
-                    ShipWindowNetworkManager.Instance.SetWindowStateClientRpc(closed, locked);
-                else
-                    ShipWindowNetworkManager.Instance.SetWindowState(closed, locked);
-            }*/
-        }
-
         static void RunCompatPatches()
         {
             // https://github.com/jverif/lc-shipwindow/issues/8
@@ -411,7 +387,7 @@ namespace ShipWindows
             var outsideSkybox = ShipWindowPlugin.outsideSkybox;
             outsideSkybox?.SetActive(active);
 
-            WindowState.Instance.SpaceActive = active;
+            WindowState.Instance.VolumeActive = active;
         }
 
         public static void OpenWindowDelayed(float delay)
@@ -424,7 +400,7 @@ namespace ShipWindows
         {
             mls.LogInfo("Opening window in " + delay + " seconds...");
             yield return new WaitForSeconds(delay);
-            TrySetWindowClosed(false, false);
+            WindowState.Instance.SetWindowState(false, false);
             windowCoroutine = null;
         }
 
@@ -437,8 +413,7 @@ namespace ShipWindows
         {
             NetworkHandler.RegisterMessages();
 
-            NetworkHandler.SetVolumeStateEvent += HandleSetVolumeState;
-            NetworkHandler.SetWindowStateEvent += HandleSetWindowState;
+            NetworkHandler.WindowSyncReceivedEvent += WindowState.Instance.ReceiveSync;
         }
 
         [HarmonyPostfix, HarmonyPatch(typeof(GameNetworkManager), "StartDisconnect")]
@@ -446,8 +421,7 @@ namespace ShipWindows
         {
             NetworkHandler.UnregisterMessages();
 
-            NetworkHandler.SetVolumeStateEvent -= HandleSetVolumeState;
-            NetworkHandler.SetWindowStateEvent -= HandleSetWindowState;
+            NetworkHandler.WindowSyncReceivedEvent -= WindowState.Instance.ReceiveSync;
         }
 
         [HarmonyPostfix, HarmonyPatch(typeof(StartOfRound), "LateUpdate")]
@@ -490,11 +464,14 @@ namespace ShipWindows
                 array[j].EnableEnemyMesh(enable: true);
         }
 
-        [HarmonyPostfix, HarmonyPatch(typeof(StartMatchLever), "StartGame")]
-        static void Patch_StartGame()
+        [HarmonyPostfix, HarmonyPatch(typeof(StartMatchLever), "PullLeverAnim")]
+        static void Patch_StartGame(bool leverPulled)
         {
             mls.LogInfo($"StartMatchLever.StartGame -> Is Host:{NetworkHandler.IsHost} / Is Client:{NetworkHandler.IsClient} ");
-            TrySetWindowClosed(true, true);
+            if (leverPulled)
+            {
+                WindowState.Instance.SetWindowState(true, true);
+            }
         }
 
         // TODO: This does not need to be networked anymore.
@@ -503,34 +480,21 @@ namespace ShipWindows
         {
             mls.LogInfo($"RoundManager.FinishGeneratingNewLevelClientRpc -> Is Host:{NetworkHandler.IsHost} / Is Client:{NetworkHandler.IsClient} ");
             OpenWindowDelayed(2f);
-        }
-
-        [HarmonyPostfix, HarmonyPatch(typeof(RoundManager), "LoadNewLevel")]
-        static void Patch_LoadNewLevel()
-        {
-            mls.LogInfo($"RoundManager.LoadNewLevel -> Is Host:{NetworkHandler.IsHost} / Is Client:{NetworkHandler.IsClient} ");
-            NetworkHandler.SetVolumeState(false);
-
-            /*if (ShipWindowNetworkManager.Instance != null)
-            {
-                mls.LogInfo("Disabling universe volume / star sphere.");
-                if (NetworkManager.Singleton.IsHost || NetworkManager.Singleton.IsServer)
-                    ShipWindowNetworkManager.Instance.SetVolumeStateClientRpc(false);
-                else
-                    ShipWindowNetworkManager.Instance.SetVolumeState(false);
-            }*/
+            WindowState.Instance.SetVolumeState(false);
         }
 
         [HarmonyPostfix, HarmonyPatch(typeof(StartOfRound), "ShipHasLeft")]
         static void Patch_ShipHasLeft()
         {
-            TrySetWindowClosed(true, true);
+            mls.LogInfo($"StartOfRound.ShipHasLeft -> Is Host:{NetworkHandler.IsHost} / Is Client:{NetworkHandler.IsClient} ");
+            WindowState.Instance.SetWindowState(true, true);
             OpenWindowDelayed(5f);
         }
 
         [HarmonyPostfix, HarmonyPatch(typeof(RoundManager), "DespawnPropsAtEndOfRound")]
         static void Patch_DespawnProps()
         {
+            mls.LogInfo($"RoundManager.DespawnPropsAtEndOfRound -> Is Host:{NetworkHandler.IsHost} / Is Client:{NetworkHandler.IsClient} ");
             switch (WindowConfig.spaceOutsideSetting.Value)
             {
                 case 0: break;
@@ -539,8 +503,9 @@ namespace ShipWindows
                 case 2:
                     // If for whatever reason this code errors, the game breaks.
                     int? dayNum = StartOfRound.Instance.gameStats?.daysSpent;
-                    SpaceSkybox.Instance?.SetRotation((dayNum ?? 1) * 80f);
-                    outsideSkybox?.SetActive(true);
+                    float rotation = (dayNum ?? 1) * 80f;
+                    WindowState.Instance.SetVolumeRotation(rotation);
+                    WindowState.Instance.SetVolumeState(true);
                     break;
 
                 default: break;
@@ -548,6 +513,13 @@ namespace ShipWindows
 
             GameObject spaceProps = GameObject.Find("Environment/SpaceProps");
             if (spaceProps != null && WindowConfig.hideSpaceProps.Value == true) spaceProps.SetActive(false);
+        }
+
+        [HarmonyPostfix, HarmonyPatch(typeof(StartOfRound), "ResetShip")]
+        static void Patch_ResetShip()
+        {
+            mls.LogInfo($"StartOfRound.ResetShip -> Is Host:{NetworkHandler.IsHost} / Is Client:{NetworkHandler.IsClient} ");
+            ObjectReplacer.Restore(vanillaShipInside);
         }
 
         private static void NetcodePatcher()
