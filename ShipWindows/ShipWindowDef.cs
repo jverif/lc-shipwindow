@@ -3,11 +3,12 @@ using ShipWindows.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using Unity.Netcode;
 using UnityEngine;
 
 namespace ShipWindows
 {
-    internal class ShipWindowDef
+    public class ShipWindowDef
     {
         public int ID;
         public int UnlockableID;
@@ -23,9 +24,11 @@ namespace ShipWindows
 
         public static ShipWindowDef Register(int id, int baseCost)
         {
-            ShipWindowPlugin.mls.LogInfo($"Registering window prefab: Window {id}");
+            ShipWindowPlugin.Log.LogInfo($"Registering window prefab: Window {id}");
             GameObject windowSpawner = ShipWindowPlugin.mainAssetBundle.LoadAsset<GameObject>($"Assets/LethalCompany/Mods/ShipWindow/SpawnWindow{id}.prefab");
             windowSpawner.AddComponent<ShipWindowSpawner>().ID = id;
+
+            NetworkManager.Singleton.AddNetworkPrefab(windowSpawner);
 
             ShipWindowDef def = new(id, windowSpawner, baseCost);
             //def.UnlockableID = Unlockables.AddWindowToUnlockables(def);

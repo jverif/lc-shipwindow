@@ -1,4 +1,7 @@
-﻿using System;
+﻿using GameNetcodeStuff;
+using HarmonyLib;
+using ShipWindows.Networking;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,6 +11,39 @@ namespace ShipWindows.Utilities
 {
     internal class Unlockables
     {
+
+        class WindowUnlockable
+        {
+            public string name;
+            public int price;
+        }
+
+        private static Dictionary<int, WindowUnlockable> unlocks = new();
+
+        [HarmonyPrefix, HarmonyPatch(typeof(Terminal), "TextPostProcess")]
+        static void Patch_TextPostProcess(ref string modifiedDisplayText, TerminalNode node)
+        {
+            try
+            {
+                if (modifiedDisplayText.Contains("[buyableItemsList]") && modifiedDisplayText.Contains("[unlockablesSelectionList]")) {
+                    int index = modifiedDisplayText.IndexOf(@":");
+
+                    foreach (var unlock in unlocks.Reverse())
+                    {
+                        string upgradeLine = $"\n* {unlock.Value.name}    //    Price: ${unlock.Value.price}";
+
+                        modifiedDisplayText = modifiedDisplayText.Insert(index + 1, upgradeLine);
+                    }
+
+                    modifiedDisplayText += "AAAAA";
+                }
+
+            } catch(Exception e)
+            {
+                ShipWindowPlugin.Log.LogError(e);
+            }
+            
+        }
 
         private static TerminalKeyword CreateKeyword(string word, TerminalKeyword defaultVerb)
         {
@@ -24,13 +60,22 @@ namespace ShipWindows.Utilities
         public static int AddWindowToUnlockables(Terminal terminal, ShipWindowDef def)
         {
             string name = $"Window {def.ID}";
-            ShipWindowPlugin.mls.LogInfo($"Adding {name} to unlockables...");
+            ShipWindowPlugin.Log.LogInfo($"Adding {name} to unlockables...");
 
             int windowUnlockableID = -1;
 
             UnlockablesList unlockablesList = StartOfRound.Instance.unlockablesList;
 
             int index = unlockablesList.unlockables.FindIndex(unlockable => unlockable.unlockableName == name);
+
+            if (!unlocks.ContainsKey(def.ID))
+            {
+                unlocks.Add(def.ID, new WindowUnlockable()
+                {
+                    name = name,
+                    price = def.BaseCost
+                });
+            }
 
             if (index == -1)
             {
@@ -44,6 +89,7 @@ namespace ShipWindows.Utilities
                 UnlockableItem sw = new UnlockableItem();
                 sw.unlockableName = name;
                 sw.spawnPrefab = true;
+                sw.alwaysInStock = true;
                 sw.prefabObject = def.Prefab;
                 sw.unlockableType = 1;
                 sw.IsPlaceable = false;
@@ -55,11 +101,11 @@ namespace ShipWindows.Utilities
                 unlockablesList.unlockables.Add(sw);
                 windowUnlockableID = unlockablesList.unlockables.FindIndex(unlockable => unlockable.unlockableName == name);
 
-                ShipWindowPlugin.mls.LogInfo($"{name} added to unlockable list at index {windowUnlockableID}");
+                ShipWindowPlugin.Log.LogInfo($"{name} added to unlockable list at index {windowUnlockableID}");
 
                 TerminalNode buyNode2 = ScriptableObject.CreateInstance<TerminalNode>();
                 buyNode2.name = $"{name.Replace(" ", "-")}BuyNode2";
-                buyNode2.displayText = "";
+                buyNode2.displayText = $"Ordered {name}! Your new balance is [playerCredits].\n\nPlease clean the windows at the end of your contract.";
                 buyNode2.clearPreviousText = true;
                 buyNode2.maxCharactersToType = 15;
                 buyNode2.buyItemIndex = -1;
@@ -71,7 +117,7 @@ namespace ShipWindows.Utilities
 
                 TerminalNode buyNode1 = ScriptableObject.CreateInstance<TerminalNode>();
                 buyNode1.name = $"{name.Replace(" ", "-")}BuyNode1";
-                buyNode1.displayText = $"You have requested to order {name}.\nTotal cost of item: [totalCost].\n\nPlease CONFIRM or DENY.";
+                buyNode1.displayText = $"You have requested to order {name}.\nTotal cost of item: [totalCost].\n\nPlease CONFIRM or DENY.\n\n";
                 buyNode1.clearPreviousText = true;
                 buyNode1.maxCharactersToType = 15;
                 buyNode1.shipUnlockableID = windowUnlockableID;
@@ -98,7 +144,7 @@ namespace ShipWindows.Utilities
                 itemInfo.clearPreviousText = true;
                 itemInfo.maxCharactersToType = 25;
 
-                sw.shopSelectionNode = buyNode1;
+                //sw.shopSelectionNode = buyNode1;
 
                 var allKeywords = terminal.terminalNodes.allKeywords.ToList();
                 allKeywords.Add(keyword);
@@ -120,7 +166,7 @@ namespace ShipWindows.Utilities
                 });
                 infoKeyword.compatibleNouns = itemInfoNouns.ToArray();
 
-                ShipWindowPlugin.mls.LogInfo($"Registered terminal nodes for {name}");
+                ShipWindowPlugin.Log.LogInfo($"Registered terminal nodes for {name}");
 
             } else
             {
@@ -162,7 +208,7 @@ namespace ShipWindows.Utilities
                 switchUnlockableID = index;
             }
 
-            ShipWindowPlugin.mls.LogInfo($"Added shutter switch to unlockables list at ID {switchUnlockableID}");
+            ShipWindowPlugin.Log.LogInfo($"Added shutter switch to unlockables list at ID {switchUnlockableID}");
 
             return switchUnlockableID;
         }

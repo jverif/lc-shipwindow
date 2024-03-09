@@ -12,6 +12,7 @@ using GameNetcodeStuff;
 using ShipWindows.Utilities;
 using ShipWindows.Networking;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace ShipWindows
 {
@@ -26,42 +27,33 @@ namespace ShipWindows
 
         public static ShipWindowPlugin Instance { get; private set; }
         public static WindowConfig Cfg { get; internal set; }
-        static internal ManualLogSource mls;
+        static internal ManualLogSource Log;
 
         public static AssetBundle mainAssetBundle;
 
-        // Game Objects
-        private static GameObject vanillaShipInside;
-
         // Prefabs
         private static GameObject windowSwitchPrefab;
-        private static Dictionary<int, ShipWindowDef> windowRegistry = new();
+        public static Dictionary<int, ShipWindowDef> windowRegistry = [];
 
         // Spawned objects
-        public static GameObject newShipInside;
         public static GameObject outsideSkybox;
 
         // Various
         private static Coroutine windowCoroutine;
 
-        public static string[] window3DisabledList = [
-            "UnderbellyMachineParts",
-            "NurbsPath.001"
-        ];
-
         void Awake()
         {
             if (Instance == null) Instance = this;
-            mls = BepInEx.Logging.Logger.CreateLogSource(modGUID);
+            Log = BepInEx.Logging.Logger.CreateLogSource(modGUID);
             Cfg = new(base.Config);
 
             if (WindowConfig.enableWindow1.Value == false && WindowConfig.enableWindow2.Value == false && WindowConfig.enableWindow3.Value == false)
             {
-                mls.LogWarning("All windows are disabled. Please enable any window in your settings for this mod to have any effect.");
+                Log.LogWarning("All windows are disabled. Please enable any window in your settings for this mod to have any effect.");
                 return;
             }
 
-            mls.LogInfo($"\nCurrent settings:\n"
+            Log.LogInfo($"\nCurrent settings:\n"
                 + $"    Vanilla Mode:       {WindowConfig.vanillaMode.Value}\n"
                 + $"    Shutters:           {WindowConfig.enableShutter.Value}\n"
                 + $"    Hide Space Props:   {WindowConfig.hideSpaceProps.Value}\n"
@@ -81,7 +73,7 @@ namespace ShipWindows
 
             if (!LoadAssetBundle())
             {
-                mls.LogError("Failed to load asset bundle! Abort mission!");
+                Log.LogError("Failed to load asset bundle! Abort mission!");
                 return;
             }
 
@@ -90,22 +82,21 @@ namespace ShipWindows
                 NetcodePatcher();
             } catch(Exception e)
             {
-                mls.LogError("Something went wrong with the netcode patcher!");
-                mls.LogError(e);
+                Log.LogError("Something went wrong with the netcode patcher!");
+                Log.LogError(e);
                 return;
             }
 
             new WindowState();
 
-            RegisterWindows();
-
             harmony.PatchAll(typeof(ShipWindowPlugin));
-            mls.LogInfo("Loaded successfully!");
+            harmony.PatchAll(typeof(Unlockables));
+            Log.LogInfo("Loaded successfully!");
         }
 
         bool LoadAssetBundle()
         {
-            mls.LogInfo("Loading ShipWindow AssetBundle...");
+            Log.LogInfo("Loading ShipWindow AssetBundle...");
             string sAssemblyLocation = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
             mainAssetBundle = AssetBundle.LoadFromFile(Path.Combine(sAssemblyLocation, "ship_window"));
 
@@ -113,23 +104,6 @@ namespace ShipWindows
                 return false;
 
             return true;
-        }
-
-        static string GetShipAssetName()
-        {
-            if (WindowConfig.windowsUnlockable.Value == true && WindowConfig.vanillaMode.Value == false)
-            {
-                bool w1 = WindowState.Instance.Window1Active;
-                bool w2 = WindowState.Instance.Window2Active;
-                bool w3 = WindowState.Instance.Window3Active;
-                return $"ShipInsideWithWindow{(w1 ? 1 : 0)}{(w2 ? 1 : 0)}{(w3 ? 1 : 0)}";
-            } else
-            {
-                bool w1 = WindowConfig.enableWindow1.Value;
-                bool w2 = WindowConfig.enableWindow2.Value;
-                bool w3 = WindowConfig.enableWindow3.Value;
-                return $"ShipInsideWithWindow{(w1 ? 1 : 0)}{(w2 ? 1 : 0)}{(w3 ? 1 : 0)}";
-            }
         }
 
         static GameObject FindOrThrow(string name)
@@ -150,6 +124,8 @@ namespace ShipWindows
             NetworkManager.Singleton.AddNetworkPrefab(shutterSwitchAsset);
 
             windowSwitchPrefab = shutterSwitchAsset;
+
+            RegisterWindows();
         }
 
         [HarmonyPostfix, HarmonyPatch(typeof(Terminal), "Awake")]
@@ -159,7 +135,8 @@ namespace ShipWindows
 
             foreach (var entry in windowRegistry)
             {
-                Unlockables.AddWindowToUnlockables(__instance, entry.Value);
+                int id = Unlockables.AddWindowToUnlockables(__instance, entry.Value);
+                entry.Value.UnlockableID = id;
             }
         }
 
@@ -168,7 +145,9 @@ namespace ShipWindows
         {
             try
             {
-                ReplaceShip();
+                if (WindowConfig.windowsUnlockable.Value == false || WindowConfig.vanillaMode.Value == true)
+                    ShipReplacer.ReplaceShip();
+
                 AddStars();
                 HideSpaceProps();
                 SpawnNetworkManager();
@@ -176,7 +155,7 @@ namespace ShipWindows
 
             } catch(Exception e)
             {
-                mls.LogError(e);
+                Log.LogError(e);
             }
             
         }
@@ -189,23 +168,9 @@ namespace ShipWindows
                 RunCompatPatches();
             } catch (Exception e)
             {
-                mls.LogError(e);
+                Log.LogError(e);
             }
 
-        }
-
-        static void AddWindowScripts(GameObject ship)
-        {
-            Transform container = ship.transform.Find("WindowContainer");
-            if (container == null) return;
-
-            foreach (Transform window in container)
-            {
-                int id;
-                if (int.TryParse(window.gameObject.name[window.name.Length - 1].ToString(), out id)) {
-                    window.gameObject.AddComponent<ShipWindow>().ID = id;
-                }
-            }
         }
 
         static int GetWindowBaseCost(int id)
@@ -226,58 +191,6 @@ namespace ShipWindows
             {
                 ShipWindowDef def = ShipWindowDef.Register(id, GetWindowBaseCost(id));
                 windowRegistry.Add(id, def);
-            }
-        }
-
-        static void ReplaceShip()
-        {
-            vanillaShipInside = FindOrThrow("Environment/HangarShip/ShipInside");
-
-            string shipName = GetShipAssetName();
-
-            GameObject newShipPrefab = mainAssetBundle.LoadAsset<GameObject>($"Assets/LethalCompany/Mods/ShipWindow/Ships/{shipName}.prefab");
-            if (newShipPrefab == null) throw new Exception($"Could not load requested ship replacement! {shipName}");
-
-            AddWindowScripts(newShipPrefab);
-
-            newShipInside = ObjectReplacer.Replace(vanillaShipInside, newShipPrefab);
-
-            // Misc objects, TODO: Clean up, move to own function.
-
-            if (WindowConfig.enableWindow2.Value == true && WindowConfig.dontMovePosters.Value == false)
-            {
-                GameObject movedPostersPrefab = mainAssetBundle.LoadAsset<GameObject>($"Assets/LethalCompany/Mods/ShipWindow/ShipPosters.prefab");
-                if (movedPostersPrefab != null)
-                {
-                    Transform oldPosters = newShipInside.transform.parent.Find("Plane.001");
-                    if (oldPosters != null)
-                    {
-                        ObjectReplacer.Replace(oldPosters.gameObject, movedPostersPrefab);
-                    }
-                }
-            }
-
-            if (WindowConfig.enableWindow3.Value == false) return;
-            mls.LogInfo($"Disabling misc objects under ship... {WindowConfig.enableWindow3.Value}");
-
-            foreach (string go in window3DisabledList)
-            {
-                var obj = GameObject.Find($"Environment/HangarShip/{go}");
-                if (obj == null) {
-                    mls.LogWarning($"Searched for {go}, but could not find!");
-                    continue; 
-                };
-
-                mls.LogInfo($"Found {go}, disabling...");
-
-                obj.gameObject.SetActive(false);
-            }
-
-            if (WindowConfig.disableUnderLights.Value == true)
-            {
-                mls.LogInfo("Disabling flood lights under ship...");
-                Transform floodLights = newShipInside.transform.Find("WindowContainer/Window3/Lights");
-                if (floodLights != null) floodLights.gameObject.SetActive(false);
             }
         }
 
@@ -363,7 +276,7 @@ namespace ShipWindows
 
             if (NetworkManager.Singleton.IsHost || NetworkManager.Singleton.IsServer)
             {
-                mls.LogInfo("Spawning shutter switch...");
+                Log.LogInfo("Spawning shutter switch...");
                 if (windowSwitchPrefab != null)
                 {
                     GameObject switchInstance = Instantiate(windowSwitchPrefab);
@@ -392,7 +305,7 @@ namespace ShipWindows
 
         private static IEnumerator OpenWindowCoroutine(float delay)
         {
-            mls.LogInfo("Opening window in " + delay + " seconds...");
+            Log.LogInfo("Opening window in " + delay + " seconds...");
             yield return new WaitForSeconds(delay);
             WindowState.Instance.SetWindowState(false, false);
             windowCoroutine = null;
@@ -434,15 +347,22 @@ namespace ShipWindows
             {
                 if (outsideSkybox != null)
                     outsideSkybox.transform.position = GameNetworkManager.Instance.localPlayerController.transform.position;
-            } else
-            {
-                // TODO: Patch something else to move this back so we aren't doing it every frame.
-                GameObject renderingObject = GameObject.Find("Systems/Rendering");
-                if (outsideSkybox != null && renderingObject != null)
-                    outsideSkybox.transform.position = renderingObject.transform.position;
             }
-
         }
+
+        /*[HarmonyPostfix, HarmonyPatch(typeof(StartOfRound), "LoadUnlockables")]
+        static void Patch_LoadUnlockables()
+        {
+            if (WindowConfig.windowsUnlockable.Value == true && WindowConfig.vanillaMode.Value == false)
+            {
+                ShipWindowSpawner[] unlockedWindows = FindObjectsByType<ShipWindowSpawner>(FindObjectsSortMode.None);
+
+                foreach (var w in unlockedWindows)
+                {
+
+                }
+            }
+        }*/
 
         [HarmonyPostfix, HarmonyPatch(typeof(EnemyAI), "Start")]
         static void Patch_AIStart(EnemyAI __instance)
@@ -469,7 +389,7 @@ namespace ShipWindows
         [HarmonyPostfix, HarmonyPatch(typeof(StartMatchLever), "PullLeverAnim")]
         static void Patch_StartGame(bool leverPulled)
         {
-            mls.LogInfo($"StartMatchLever.StartGame -> Is Host:{NetworkHandler.IsHost} / Is Client:{NetworkHandler.IsClient} ");
+            Log.LogInfo($"StartMatchLever.StartGame -> Is Host:{NetworkHandler.IsHost} / Is Client:{NetworkHandler.IsClient} ");
             if (leverPulled)
             {
                 WindowState.Instance.SetWindowState(true, true);
@@ -480,7 +400,7 @@ namespace ShipWindows
         [HarmonyPostfix, HarmonyPatch(typeof(RoundManager), "FinishGeneratingNewLevelClientRpc")]
         static void Patch_OpenDoorSequence()
         {
-            mls.LogInfo($"RoundManager.FinishGeneratingNewLevelClientRpc -> Is Host:{NetworkHandler.IsHost} / Is Client:{NetworkHandler.IsClient} ");
+            Log.LogInfo($"RoundManager.FinishGeneratingNewLevelClientRpc -> Is Host:{NetworkHandler.IsHost} / Is Client:{NetworkHandler.IsClient} ");
             OpenWindowDelayed(2f);
             WindowState.Instance.SetVolumeState(false);
         }
@@ -488,7 +408,7 @@ namespace ShipWindows
         [HarmonyPostfix, HarmonyPatch(typeof(StartOfRound), "ShipHasLeft")]
         static void Patch_ShipHasLeft()
         {
-            mls.LogInfo($"StartOfRound.ShipHasLeft -> Is Host:{NetworkHandler.IsHost} / Is Client:{NetworkHandler.IsClient} ");
+            Log.LogInfo($"StartOfRound.ShipHasLeft -> Is Host:{NetworkHandler.IsHost} / Is Client:{NetworkHandler.IsClient} ");
             WindowState.Instance.SetWindowState(true, true);
             OpenWindowDelayed(5f);
         }
@@ -496,7 +416,7 @@ namespace ShipWindows
         [HarmonyPostfix, HarmonyPatch(typeof(RoundManager), "DespawnPropsAtEndOfRound")]
         static void Patch_DespawnProps()
         {
-            mls.LogInfo($"RoundManager.DespawnPropsAtEndOfRound -> Is Host:{NetworkHandler.IsHost} / Is Client:{NetworkHandler.IsClient} ");
+            Log.LogInfo($"RoundManager.DespawnPropsAtEndOfRound -> Is Host:{NetworkHandler.IsHost} / Is Client:{NetworkHandler.IsClient} ");
             switch (WindowConfig.spaceOutsideSetting.Value)
             {
                 case 0: break;
@@ -520,12 +440,16 @@ namespace ShipWindows
         [HarmonyPostfix, HarmonyPatch(typeof(StartOfRound), "ResetShip")]
         static void Patch_ResetShip()
         {
-            mls.LogInfo($"StartOfRound.ResetShip -> Is Host:{NetworkHandler.IsHost} / Is Client:{NetworkHandler.IsClient} ");
+            Log.LogInfo($"StartOfRound.ResetShip -> Is Host:{NetworkHandler.IsHost} / Is Client:{NetworkHandler.IsClient} ");
 
             if (WindowConfig.windowsUnlockable.Value == true && WindowConfig.vanillaMode.Value == false)
             {
-                ObjectReplacer.Restore(vanillaShipInside);
+                //ObjectReplacer.Restore("ShipInside");
             }
+
+            GameObject renderingObject = GameObject.Find("Systems/Rendering");
+            if (outsideSkybox != null && renderingObject != null)
+                outsideSkybox.transform.position = renderingObject.transform.position;
         }
 
         private static void NetcodePatcher()

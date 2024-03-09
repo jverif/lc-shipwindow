@@ -23,7 +23,7 @@ namespace ShipWindows.Networking
 
         public static void RegisterMessages()
         {
-            ShipWindowPlugin.mls.LogInfo("Registering network message handlers...");
+            ShipWindowPlugin.Log.LogInfo("Registering network message handlers...");
             MessageManager.RegisterNamedMessageHandler("ShipWindow_WindowSyncResponse", ReceiveWindowSync);
 
             MessageManager.RegisterNamedMessageHandler("ShipWindow_WindowSwitchUsed", ReceiveWindowSwitchUsed_Server);
@@ -37,7 +37,7 @@ namespace ShipWindows.Networking
 
         public static void UnregisterMessages()
         {
-            ShipWindowPlugin.mls.LogInfo("Unregistering network message handlers...");
+            ShipWindowPlugin.Log.LogInfo("Unregistering network message handlers...");
             MessageManager.UnregisterNamedMessageHandler("ShipWindow_WindowSyncResponse");
             MessageManager.UnregisterNamedMessageHandler("ShipWindow_WindowSyncRequest");
 
@@ -50,7 +50,7 @@ namespace ShipWindows.Networking
             using FastBufferWriter stream = new(1, Allocator.Temp);
             stream.WriteValueSafe(currentState);
 
-            ShipWindowPlugin.mls.LogInfo("Sending window switch toggle message...");
+            ShipWindowPlugin.Log.LogInfo("Sending window switch toggle message...");
 
             MessageManager.SendNamedMessage("ShipWindow_WindowSwitchUsed", 0ul, stream);
         }
@@ -64,7 +64,7 @@ namespace ShipWindows.Networking
             using FastBufferWriter stream = new(1, Allocator.Temp);
             stream.WriteValueSafe(currentState);
 
-            ShipWindowPlugin.mls.LogInfo($"Received window switch toggle message from client {clientId}");
+            ShipWindowPlugin.Log.LogInfo($"Received window switch toggle message from client {clientId}");
 
             MessageManager.SendNamedMessageToAll("ShipWindow_WindowSwitchUsedBroadcast", stream);
         }
@@ -74,7 +74,7 @@ namespace ShipWindows.Networking
             bool currentState;
             reader.ReadValueSafe(out currentState);
 
-            ShipWindowPlugin.mls.LogInfo("Received window switch toggle message from server...");
+            ShipWindowPlugin.Log.LogInfo("Received window switch toggle message from server...");
 
             WindowState.Instance.SetWindowState(!currentState, WindowState.Instance.WindowsLocked);
         }
@@ -100,7 +100,7 @@ namespace ShipWindows.Networking
             }
             catch (Exception e)
             {
-                ShipWindowPlugin.mls.LogError($"Error occurred sending window sync message:\n{e}");
+                ShipWindowPlugin.Log.LogError($"Error occurred sending window sync message:\n{e}");
             }
         }
 
@@ -108,7 +108,7 @@ namespace ShipWindows.Networking
         {
             if (!IsClient) return;
 
-            ShipWindowPlugin.mls.LogInfo("Requesting WindowState sync...");
+            ShipWindowPlugin.Log.LogInfo("Requesting WindowState sync...");
 
             using FastBufferWriter stream = new(1, Allocator.Temp);
             MessageManager.SendNamedMessage("ShipWindow_WindowSyncRequest", 0ul, stream);
@@ -120,18 +120,18 @@ namespace ShipWindows.Networking
 
             if (!reader.TryBeginRead(IntSize))
             {
-                ShipWindowPlugin.mls.LogError("Failed to read window sync message");
+                ShipWindowPlugin.Log.LogError("Failed to read window sync message");
                 return;
             }
 
             reader.ReadValueSafe(out int len, default);
             if (!reader.TryBeginRead(len))
             {
-                ShipWindowPlugin.mls.LogError("Window sync failed.");
+                ShipWindowPlugin.Log.LogError("Window sync failed.");
                 return;
             }
 
-            ShipWindowPlugin.mls.LogInfo("Receiving WindowState sync message...");
+            ShipWindowPlugin.Log.LogInfo("Receiving WindowState sync message...");
 
             byte[] data = new byte[len];
             reader.ReadBytesSafe(ref data, len);
@@ -139,7 +139,7 @@ namespace ShipWindows.Networking
             WindowState state = DeserializeFromBytes<WindowState>(data);
             WindowState.Instance = state;
 
-            ShipWindowPlugin.mls.LogInfo($"{state.WindowsClosed}, {state.WindowsLocked}, {state.VolumeActive}, {state.VolumeRotation}");
+            ShipWindowPlugin.Log.LogInfo($"{state.WindowsClosed}, {state.WindowsLocked}, {state.VolumeActive}, {state.VolumeRotation}");
 
             WindowSyncReceivedEvent?.Invoke();
 
@@ -157,7 +157,7 @@ namespace ShipWindows.Networking
             }
             catch (Exception e)
             {
-                ShipWindowPlugin.mls.LogError($"Error serializing object: \n{e}");
+                ShipWindowPlugin.Log.LogError($"Error serializing object: \n{e}");
                 return null;
             }
         }
@@ -173,7 +173,7 @@ namespace ShipWindows.Networking
             }
             catch (Exception e)
             {
-                ShipWindowPlugin.mls.LogError($"Error deserializing object: \n{e}");
+                ShipWindowPlugin.Log.LogError($"Error deserializing object: \n{e}");
                 return default;
             }
         }

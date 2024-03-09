@@ -61,8 +61,8 @@ namespace ShipWindows.Networking
             // By this point the Instance has already been replaced, so we can just update the actual objects
             // with what the values should be.
 
-            ShipWindowPlugin.mls.LogInfo("Applying synced values...");
-            ShipWindowPlugin.mls.LogInfo($"{WindowsClosed}, {WindowsLocked}, {VolumeActive}, {VolumeRotation}");
+            ShipWindowPlugin.Log.LogInfo("Applying synced values...");
+            ShipWindowPlugin.Log.LogInfo($"{WindowsClosed}, {WindowsLocked}, {VolumeActive}, {VolumeRotation}");
 
             SetWindowState(WindowsClosed, WindowsLocked);
             SetVolumeState(VolumeActive);

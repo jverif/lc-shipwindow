@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using UnityEngine;
 
@@ -12,7 +13,7 @@ namespace ShipWindows.Utilities
 
         public static GameObject Replace(GameObject original, GameObject prefab)
         {
-            ShipWindowPlugin.mls.LogInfo($"Replacing object ${original.name} with {prefab.name}...");
+            ShipWindowPlugin.Log.LogInfo($"Replacing object {original.name} with {prefab.name}...");
             GameObject newObj = UnityEngine.Object.Instantiate(prefab, original.transform.parent);
             newObj.transform.position = original.transform.position;
             newObj.transform.rotation = original.transform.rotation;
@@ -36,6 +37,8 @@ namespace ShipWindows.Utilities
 
         public static void Restore(GameObject original)
         {
+            if (!replacedObjects.ContainsKey(original)) return;
+
             try
             {
                 ReplaceInfo info;
@@ -50,7 +53,7 @@ namespace ShipWindows.Utilities
 
             } catch (Exception e)
             {
-                ShipWindowPlugin.mls.LogWarning($"GameObject replacement info not found for: " +
+                ShipWindowPlugin.Log.LogWarning($"GameObject replacement info not found for: " +
                     $"{(original != null ? original.name : "Invalid GameObject")}! Not replaced?");
             }
         }
@@ -61,6 +64,6 @@ namespace ShipWindows.Utilities
     {
         public string name;
         public GameObject original;
-        public  GameObject replacement;
+        public GameObject replacement;
     }
 }

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using ShipWindows.Utilities;
+using System;
 using System.Collections.Generic;
 using System.Text;
 using UnityEngine;
@@ -11,7 +12,11 @@ namespace ShipWindows.Components
 
         public void Start()
         {
-            ShipWindowPlugin.mls.LogInfo($"We should spawn window {ID}");
+            ShipWindowPlugin.Log.LogInfo($"We should spawn window {ID}");
+
+            // Flag to the mod that we have spawned. It will wait for a moment and then
+            // find all ShipWindowSpawners to replace the ship once instead of n times.
+            ShipReplacer.ReplaceDebounced();
         }
     }
 }
