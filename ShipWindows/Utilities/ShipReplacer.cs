@@ -51,6 +51,8 @@ namespace ShipWindows.Utilities
 
             foreach (Transform window in container)
             {
+                if (window.gameObject.GetComponent<ShipWindow>() != null) continue;
+
                 int id;
                 if (int.TryParse(window.gameObject.name[window.name.Length - 1].ToString(), out id))
                 {
@@ -90,10 +92,10 @@ namespace ShipWindows.Utilities
             try
             {
 
-                if (newShipInside != null)
+                if (newShipInside != null && vanillaShipInside != null)
                 {
                     ShipWindowPlugin.Log.LogError($"Calling ReplaceShip when ship was already replaced! Ignoring...");
-                    return;
+                    ObjectReplacer.Restore(vanillaShipInside);
                 }
 
                 vanillaShipInside = FindOrThrow("Environment/HangarShip/ShipInside");
@@ -105,7 +107,6 @@ namespace ShipWindows.Utilities
                     ($"Assets/LethalCompany/Mods/ShipWindow/Ships/{shipName}.prefab");
 
                 if (newShipPrefab == null) throw new Exception($"Could not load requested ship replacement! {shipName}");
-
                 AddWindowScripts(newShipPrefab);
 
                 newShipInside = ObjectReplacer.Replace(vanillaShipInside, newShipPrefab);

@@ -131,7 +131,6 @@ namespace ShipWindows
             NetworkManager.Singleton.AddNetworkPrefab(shutterSwitchAsset);
 
             windowSwitchPrefab = shutterSwitchAsset;
-
             RegisterWindows();
         }
 
@@ -153,6 +152,7 @@ namespace ShipWindows
             try
             {
                 SpawnNetworkManager();
+                Unlockables.AddSwitchToUnlockables();
 
                 // The debounce coroutine is cancelled when quitting the game because StartOfRound is destroyed.
                 // This means the flag doesn't get reset. So, we have to manually reset it at the start.
@@ -285,6 +285,7 @@ namespace ShipWindows
         static void RunCompatPatches()
         {
 
+            Log.LogInfo("Checking for installed plugins...");
             List<PluginInfo> plugins = Chainloader.PluginInfos.Values.ToList();
 
             foreach (var plugin in plugins)
@@ -305,10 +306,10 @@ namespace ShipWindows
                         }
                         break;
 
-                    case "NightSky":
+                    case "NightSkyPlugin":
                         // Celestial Tint has its own Volume. Ignore Skybox and Space Props settings.
                         
-                        Log.LogInfo("[Compatibility] Celestial Tint found.");
+                        Log.LogInfo("[Compatibility] Celestial Tint found, setting flag...");
                         Flag_CelestialTint = true;
                         
                         break;
@@ -365,12 +366,15 @@ namespace ShipWindows
         {
             if (Flag_CelestialTint == true) return;
             // Make the stars follow the player when they get sucked out of the ship.
-            if (StartOfRound.Instance.suckingPlayersOutOfShip && outsideSkybox != null)
+            if (outsideSkybox != null)
             {
-                outsideSkybox.transform.position = GameNetworkManager.Instance.localPlayerController.transform.position;
-            } else
-            {
-                outsideSkybox.transform.localPosition = Vector3.zero;
+                if (StartOfRound.Instance.suckingPlayersOutOfShip)
+                {
+                    outsideSkybox.transform.position = GameNetworkManager.Instance.localPlayerController.transform.position;
+                } else
+                {
+                    outsideSkybox.transform.localPosition = Vector3.zero;
+                }
             }
         }
 
