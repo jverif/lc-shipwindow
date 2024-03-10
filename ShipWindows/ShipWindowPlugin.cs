@@ -209,7 +209,19 @@ namespace ShipWindows
 
             return false;
         }
-        
+
+        public static bool IsWindowDefaultUnlocked(int id)
+        {
+            switch (id)
+            {
+                case 1: return WindowConfig.defaultWindow1.Value;
+                case 2: return WindowConfig.defaultWindow2.Value;
+                case 3: return WindowConfig.defaultWindow3.Value;
+            }
+
+            return false;
+        }
+
         static void RegisterWindows()
         {
             for (int id = 1; id <= 3; id++)

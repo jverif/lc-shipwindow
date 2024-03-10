@@ -107,7 +107,7 @@ namespace ShipWindows.Utilities
                 sw.IsPlaceable = false;
                 sw.maxNumber = 1;
                 sw.canBeStored = false;
-                sw.alreadyUnlocked = false;
+                sw.alreadyUnlocked = ShipWindowPlugin.IsWindowDefaultUnlocked(def.ID);
 
                 unlockablesList.unlockables.Capacity++;
                 unlockablesList.unlockables.Add(sw);

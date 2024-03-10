@@ -22,6 +22,10 @@ namespace ShipWindows
         public static ConfigEntry<bool> enableWindow2;
         public static ConfigEntry<bool> enableWindow3;
 
+        public static ConfigEntry<bool> defaultWindow1;
+        public static ConfigEntry<bool> defaultWindow2;
+        public static ConfigEntry<bool> defaultWindow3;
+
         //public static ConfigEntry<bool> celestialTintOverrideSpace;
 
         public WindowConfig(ConfigFile cfg)
@@ -51,15 +55,21 @@ namespace ShipWindows
             window2Cost = cfg.Bind("General", "Window2Cost", 60,
                 "The base cost of the window across from the terminal / left of the switch.");
             window3Cost = cfg.Bind("General", "Window3Cost", 100,
-                "The base cost of the window on the floor");
+                "The base cost of the large floor window.");
 
-            // If windows are set to not be purchasable...
             enableWindow1 = cfg.Bind("General", "EnableWindow1", true,
-                "If not set as  purchasable, enable the window to the right of the switch, behind the terminal.");
+                "Enable the window to the right of the switch, behind the terminal.");
             enableWindow2 = cfg.Bind("General", "EnableWindow2", true,
-                "If not set as  purchasable, enable the window to the left of the switch, across from the first window.");
+                "Enable the window to the left of the switch, across from the first window.");
             enableWindow3 = cfg.Bind("General", "EnableWindow3", true,
-                "If not set as purchasable, enable the large glass floor.");
+                "Enable the large floor window.");
+
+            defaultWindow1 = cfg.Bind("General", "UnlockWindow1", true,
+                "If set as unlockable, start the game with window to the right of the switch unlocked already.");
+            defaultWindow2 = cfg.Bind("General", "UnlockWindow2", false,
+                "If set as unlockable, start the game with window across from the terminal unlocked already.");
+            defaultWindow3 = cfg.Bind("General", "UnlockWindow3", false,
+                "If set as unlockable, start the game with the floor window unlocked already.");
 
             //celestialTintOverrideSpace = cfg.Bind("Other Mods", "CelestialTintOverrideSpace", false,
             //    "If Celestial Tint is installed, replace the space skybox with the red sky from Ship Windows.");
