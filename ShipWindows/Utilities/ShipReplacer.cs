@@ -66,7 +66,7 @@ namespace ShipWindows.Utilities
             if (debounceReplace) return;
 
             debounceReplace = true;
-            StartOfRound.Instance.StartCoroutine(ReplacementCoroutine(true));
+            StartOfRound.Instance.StartCoroutine(ReplacementCoroutine(replace));
         }
 
         private static IEnumerator ReplacementCoroutine(bool replace)
