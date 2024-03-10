@@ -22,6 +22,8 @@ namespace ShipWindows
         public static ConfigEntry<bool> enableWindow2;
         public static ConfigEntry<bool> enableWindow3;
 
+        //public static ConfigEntry<bool> celestialTintOverrideSpace;
+
         public WindowConfig(ConfigFile cfg)
         {
             vanillaMode = cfg.Bind("General", "VanillaMode", false,
@@ -58,6 +60,9 @@ namespace ShipWindows
                 "If not set as  purchasable, enable the window to the left of the switch, across from the first window.");
             enableWindow3 = cfg.Bind("General", "EnableWindow3", true,
                 "If not set as purchasable, enable the large glass floor.");
+
+            //celestialTintOverrideSpace = cfg.Bind("Other Mods", "CelestialTintOverrideSpace", false,
+            //    "If Celestial Tint is installed, replace the space skybox with the red sky from Ship Windows.");
         }
     }
 }
