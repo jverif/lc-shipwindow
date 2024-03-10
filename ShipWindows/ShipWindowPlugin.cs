@@ -197,11 +197,25 @@ namespace ShipWindows
 
             return 60; // Shouldn't happen, but just in case.
         }
+
+        public static bool IsWindowEnabled(int id)
+        {
+            switch (id)
+            {
+                case 1: return WindowConfig.enableWindow1.Value;
+                case 2: return WindowConfig.enableWindow1.Value;
+                case 3: return WindowConfig.enableWindow1.Value;
+            }
+
+            return false;
+        }
         
         static void RegisterWindows()
         {
             for (int id = 1; id <= 3; id++)
             {
+                if (!IsWindowEnabled(id)) continue;
+
                 ShipWindowDef def = ShipWindowDef.Register(id, GetWindowBaseCost(id));
                 windowRegistry.Add(id, def);
             }

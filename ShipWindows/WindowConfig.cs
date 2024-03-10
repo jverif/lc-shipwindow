@@ -54,9 +54,9 @@ namespace ShipWindows
             // If windows are set to not be purchasable...
             enableWindow1 = cfg.Bind("General", "EnableWindow1", true,
                 "If not set as  purchasable, enable the window to the right of the switch, behind the terminal.");
-            enableWindow2 = cfg.Bind("General", "EnableWindow2", false,
+            enableWindow2 = cfg.Bind("General", "EnableWindow2", true,
                 "If not set as  purchasable, enable the window to the left of the switch, across from the first window.");
-            enableWindow3 = cfg.Bind("General", "EnableWindow3", false,
+            enableWindow3 = cfg.Bind("General", "EnableWindow3", true,
                 "If not set as purchasable, enable the large glass floor.");
         }
     }

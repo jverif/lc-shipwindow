@@ -1,19 +1,27 @@
 # Ship Window
-Adds some glass windows to the drop ship so you can see outside.
+Adds three glass windows to the ship's store as permanent ship upgrades. Availability and price both configurable.
 
-**Important: Only one window is enabled by default (behind the terminal). The other two can be enabled in the configuration after you launch the game with this mod for the first time.**
+![Screenshot_1](https://raw.githubusercontent.com/jverif/lc-shipwindow/main/Screenshots/showcase.png "Showcase")
 
-Check mod configuration after first launch for controlling skybox, window shutter, and outside space prop behaviors.
+## Compatibility
+- Toggle "VanillaMode" in your configuration to make this mod client-side only and compatible with vanilla lobbies.
+- This mod is not compatible with other mods that change the ship's model.
+- LethalPosters may be incompatible. If you have issues with it, set "DontMovePosters" to true in your ShipWindows config.
 
-All players must install this mod or there will be desync issues. The last version that does not break vanilla network compatability is **1.0.5**.
+**Important: If you are updating from < 2.0.0, you will need to enable windows 2 and 3 in your config for them to be purchasable!**
 
 Please report any issues on GitHub or in the #mod-releases thread in the Lethal Company Modding Discord here: https://discord.com/channels/1168655651455639582/1203500753939988532
 
+Thunderstore Link: https://thunderstore.io/c/lethal-company/p/veri/ShipWindows/
+
+## Recommended Mods
+- **[Celestial Tint](https://thunderstore.io/c/lethal-company/p/sfDesat/Celestial_Tint/)** by **sfDesat** - For an amazing view of space outside the windows.
+
 ## Planned Features
-- Add windows as ship upgrades that can be purchased as you play.
-- Update shutters on wall windows.
+- Update window shapes and add trim.
+- Update shutter mesh
+- Window decorations (curtains, etc.)
 - Open / close sounds.
-- Vanilla compatability option.
 
 ## Thanks to
 - Soup (@souper194) - Shutter texture used on versions >= 1.2.0
@@ -21,7 +29,9 @@ Please report any issues on GitHub or in the #mod-releases thread in the Lethal 
 ## Update History
 
 - **2.0.0**
-    - Network rewrite
+    - Windows as unlockables. Use the terminal store to purchase windows for your ship.
+    - Vanilla compatibility option (disables switch and unlockables).
+    - Detect Celestial Tint for better compatibility.
 
 - **1.3.6**
     - Fix a bug breaking the lever after the first day.
