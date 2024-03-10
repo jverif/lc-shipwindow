@@ -1,11 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Serilog;
-using ShipWindows.Networking;
-using ShipWindows.Utilities;
+﻿using ShipWindows.Utilities;
 using UnityEngine;
 
 namespace ShipWindows.Components

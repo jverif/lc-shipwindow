@@ -1,7 +1,4 @@
 ﻿using ShipWindows.Utilities;
-using System;
-using System.Collections.Generic;
-using System.Text;
 using UnityEngine;
 
 namespace ShipWindows.Components
@@ -16,7 +13,13 @@ namespace ShipWindows.Components
 
             // Flag to the mod that we have spawned. It will wait for a moment and then
             // find all ShipWindowSpawners to replace the ship once instead of n times.
-            ShipReplacer.ReplaceDebounced();
+            ShipReplacer.ReplaceDebounced(true);
+        }
+
+        public void OnDestroy()
+        {
+            // If the ship was already replaced, calling again will revert it.
+            ShipReplacer.ReplaceDebounced(false);
         }
     }
 }

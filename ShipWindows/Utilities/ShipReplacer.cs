@@ -1,20 +1,22 @@
-﻿using ShipWindows.Components;
-using System;
+﻿using System;
 using System.Collections;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
+using Unity.Netcode;
 using UnityEngine;
+using ShipWindows.Components;
 
 namespace ShipWindows.Utilities
 {
     internal class ShipReplacer
     {
 
-        public static Coroutine debounceReplace;
+        public static bool debounceReplace = false;
 
         public static GameObject vanillaShipInside;
         public static GameObject newShipInside;
+
+        // Only set on the server
+        public static GameObject switchInstance;
 
         static GameObject FindOrThrow(string name)
         {
@@ -57,21 +59,30 @@ namespace ShipWindows.Utilities
             }
         }
 
-        public static void ReplaceDebounced()
+        public static void ReplaceDebounced(bool replace)
         {
+            ShipWindowPlugin.Log.LogInfo($"Debounce replace call. Replace? {replace} Is multiple call: {debounceReplace}");
             if (WindowConfig.windowsUnlockable.Value == false || WindowConfig.vanillaMode.Value == true) return;
-            if (debounceReplace != null) return;
+            if (debounceReplace) return;
 
-            debounceReplace = StartOfRound.Instance.StartCoroutine(ReplacementCoroutine());
+            debounceReplace = true;
+            StartOfRound.Instance.StartCoroutine(ReplacementCoroutine(true));
         }
 
-        private static IEnumerator ReplacementCoroutine()
+        private static IEnumerator ReplacementCoroutine(bool replace)
         {
             yield return null; // Wait 1 frame.
 
-            ReplaceShip();
+            ShipWindowPlugin.Log.LogInfo("Performing ship replacement/restore.");
+            debounceReplace = false;
 
-            debounceReplace = null;
+            if (replace)
+            {
+                ReplaceShip();
+            } else
+            {
+                RestoreShip();
+            }
         }
 
         public static void ReplaceShip()
@@ -81,12 +92,14 @@ namespace ShipWindows.Utilities
 
                 if (newShipInside != null)
                 {
-                    ShipWindowPlugin.Log.LogWarning($"Calling ReplaceShip when ship was already replaced! Restoring original...");
-                    ObjectReplacer.Restore(vanillaShipInside);
+                    ShipWindowPlugin.Log.LogError($"Calling ReplaceShip when ship was already replaced! Ignoring...");
+                    return;
                 }
 
                 vanillaShipInside = FindOrThrow("Environment/HangarShip/ShipInside");
                 string shipName = GetShipAssetName();
+
+                ShipWindowPlugin.Log.LogInfo($"Replacing ship with {shipName}");
 
                 GameObject newShipPrefab = ShipWindowPlugin.mainAssetBundle.LoadAsset<GameObject>
                     ($"Assets/LethalCompany/Mods/ShipWindow/Ships/{shipName}.prefab");
@@ -97,10 +110,61 @@ namespace ShipWindows.Utilities
 
                 newShipInside = ObjectReplacer.Replace(vanillaShipInside, newShipPrefab);
 
+                StartOfRound.Instance.StartCoroutine(WaitAndCheckSwitch());
+
             } catch (Exception e)
             {
                 ShipWindowPlugin.Log.LogError($"Failed to replace ShipInside! \n{e}");
             }
+        }
+
+        public static void SpawnSwitch()
+        {
+            ShipWindowPlugin.Log.LogInfo("Spawning shutter switch...");
+            if (ShipWindowPlugin.windowSwitchPrefab != null)
+            {
+                int id = Unlockables.AddSwitchToUnlockables();
+                var shipObject = ShipWindowPlugin.windowSwitchPrefab.GetComponentInChildren<PlaceableShipObject>();
+                shipObject.unlockableID = id;
+
+                switchInstance = UnityEngine.GameObject.Instantiate(ShipWindowPlugin.windowSwitchPrefab);
+                switchInstance.GetComponent<NetworkObject>().Spawn();
+            }
+        }
+
+        public static void CheckShutterSwitch()
+        {
+            if (NetworkManager.Singleton.IsHost || NetworkManager.Singleton.IsServer)
+            {
+                ShipWindowPlugin.Log.LogInfo("Checking window switch redundancy...");
+                ShipWindowSpawner[] windows = UnityEngine.Object.FindObjectsByType<ShipWindowSpawner>(FindObjectsSortMode.None);
+
+                if (windows.Length > 0)
+                {
+                    if (switchInstance == null)
+                    {
+                        SpawnSwitch();
+                    } else
+                    {
+                        switchInstance.SetActive(true);
+                    }
+                } else
+                {
+                    if (switchInstance != null)
+                    {
+                        UnityEngine.GameObject.Destroy(switchInstance);
+                        switchInstance = null;
+                    }
+                        
+                }
+            }
+        }
+
+        public static IEnumerator WaitAndCheckSwitch()
+        {
+            yield return null;
+
+            CheckShutterSwitch();
         }
 
         public static void RestoreShip()
@@ -108,6 +172,7 @@ namespace ShipWindows.Utilities
             if (newShipInside == null) return;
 
             ObjectReplacer.Restore(vanillaShipInside);
+            StartOfRound.Instance.StartCoroutine(WaitAndCheckSwitch());
             newShipInside = null;
         }
     }

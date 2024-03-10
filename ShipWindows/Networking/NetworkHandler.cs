@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 using Unity.Netcode;
 using Unity.Collections;
 using System.Runtime.Serialization.Formatters.Binary;

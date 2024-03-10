@@ -13,6 +13,7 @@ using ShipWindows.Utilities;
 using ShipWindows.Networking;
 using System.Collections.Generic;
 using System.Linq;
+using BepInEx.Bootstrap;
 
 namespace ShipWindows
 {
@@ -32,14 +33,20 @@ namespace ShipWindows
         public static AssetBundle mainAssetBundle;
 
         // Prefabs
-        private static GameObject windowSwitchPrefab;
+        public static GameObject windowSwitchPrefab;
         public static Dictionary<int, ShipWindowDef> windowRegistry = [];
+
+        // Vanilla object references
+        public static GameObject spaceProps;
 
         // Spawned objects
         public static GameObject outsideSkybox;
 
         // Various
         private static Coroutine windowCoroutine;
+
+        // Compatability flags
+        public static bool Flag_CelestialTint = false;
 
         void Awake()
         {
@@ -131,7 +138,7 @@ namespace ShipWindows
         [HarmonyPostfix, HarmonyPatch(typeof(Terminal), "Awake")]
         static void Patch_TerminalAwake(Terminal __instance)
         {
-            if (WindowConfig.vanillaMode.Value == true) return;
+            if (WindowConfig.windowsUnlockable.Value == false || WindowConfig.vanillaMode.Value == true) return;
 
             foreach (var entry in windowRegistry)
             {
@@ -145,13 +152,11 @@ namespace ShipWindows
         {
             try
             {
-                if (WindowConfig.windowsUnlockable.Value == false || WindowConfig.vanillaMode.Value == true)
-                    ShipReplacer.ReplaceShip();
-
-                AddStars();
-                HideSpaceProps();
                 SpawnNetworkManager();
-                SpawnSwitch();
+
+                // The debounce coroutine is cancelled when quitting the game because StartOfRound is destroyed.
+                // This means the flag doesn't get reset. So, we have to manually reset it at the start.
+                ShipReplacer.debounceReplace = false;
 
             } catch(Exception e)
             {
@@ -165,7 +170,15 @@ namespace ShipWindows
         {
             try
             {
+
+                if (WindowConfig.windowsUnlockable.Value == false || WindowConfig.vanillaMode.Value == true)
+                    ShipReplacer.ReplaceShip();
+
                 RunCompatPatches();
+
+                AddStars();
+                HideSpaceProps();
+
             } catch (Exception e)
             {
                 Log.LogError(e);
@@ -196,6 +209,8 @@ namespace ShipWindows
 
         static void AddStars()
         {
+            if (Flag_CelestialTint == true) return;
+
             GameObject renderingObject = GameObject.Find("Systems/Rendering");
             GameObject vanillaStarSphere = GameObject.Find("Systems/Rendering/StarsSphere");
 
@@ -248,6 +263,8 @@ namespace ShipWindows
 
         static void HideSpaceProps()
         {
+            if (Flag_CelestialTint == true) return;
+
             if (WindowConfig.hideSpaceProps.Value == true)
             {
                 GameObject spaceProps = GameObject.Find("Environment/SpaceProps");
@@ -265,35 +282,39 @@ namespace ShipWindows
             }
         }
 
-        static void SpawnSwitch()
-        {
-            if (windowSwitchPrefab != null)
-            {
-                int id = Unlockables.AddSwitchToUnlockables();
-                var shipObject = windowSwitchPrefab.GetComponentInChildren<PlaceableShipObject>();
-                shipObject.unlockableID = id;
-            }
-
-            if (NetworkManager.Singleton.IsHost || NetworkManager.Singleton.IsServer)
-            {
-                Log.LogInfo("Spawning shutter switch...");
-                if (windowSwitchPrefab != null)
-                {
-                    GameObject switchInstance = Instantiate(windowSwitchPrefab);
-                    switchInstance.GetComponent<NetworkObject>().Spawn();
-                }
-            }
-        }
-
         static void RunCompatPatches()
         {
-            // https://github.com/jverif/lc-shipwindow/issues/8
-            // Lethal Expansion "terrainfixer" is positioned at 0, -500, 0 and becomes
-            // visible when a mod that increases view distance is installed.
-            GameObject terrainfixer = GameObject.Find("terrainfixer");
-            if (terrainfixer != null)
+
+            List<PluginInfo> plugins = Chainloader.PluginInfos.Values.ToList();
+
+            foreach (var plugin in plugins)
             {
-                terrainfixer.transform.position = new Vector3(0, -5000, 0);
+                switch (plugin.Metadata.GUID)
+                {
+                    case "LethalExpansion":
+                    case "com.github.lethalmods.lethalexpansioncore":
+                        // https://github.com/jverif/lc-shipwindow/issues/8
+                        // Lethal Expansion "terrainfixer" is positioned at 0, -500, 0 and becomes
+                        // visible when a mod that increases view distance is installed.
+
+                        Log.LogInfo("[Compatibility] Lethal Expansion found.");
+                        GameObject terrainfixer = GameObject.Find("terrainfixer");
+                        if (terrainfixer != null)
+                        {
+                            terrainfixer.transform.position = new Vector3(0, -5000, 0);
+                        }
+                        break;
+
+                    case "NightSky":
+                        // Celestial Tint has its own Volume. Ignore Skybox and Space Props settings.
+                        
+                        Log.LogInfo("[Compatibility] Celestial Tint found.");
+                        Flag_CelestialTint = true;
+                        
+                        break;
+
+                    default: break;
+                }
             }
         }
 
@@ -342,27 +363,16 @@ namespace ShipWindows
         [HarmonyPostfix, HarmonyPatch(typeof(StartOfRound), "LateUpdate")]
         static void Patch_RoundLateUpdate()
         {
+            if (Flag_CelestialTint == true) return;
             // Make the stars follow the player when they get sucked out of the ship.
-            if (StartOfRound.Instance.suckingPlayersOutOfShip)
+            if (StartOfRound.Instance.suckingPlayersOutOfShip && outsideSkybox != null)
             {
-                if (outsideSkybox != null)
-                    outsideSkybox.transform.position = GameNetworkManager.Instance.localPlayerController.transform.position;
+                outsideSkybox.transform.position = GameNetworkManager.Instance.localPlayerController.transform.position;
+            } else
+            {
+                outsideSkybox.transform.localPosition = Vector3.zero;
             }
         }
-
-        /*[HarmonyPostfix, HarmonyPatch(typeof(StartOfRound), "LoadUnlockables")]
-        static void Patch_LoadUnlockables()
-        {
-            if (WindowConfig.windowsUnlockable.Value == true && WindowConfig.vanillaMode.Value == false)
-            {
-                ShipWindowSpawner[] unlockedWindows = FindObjectsByType<ShipWindowSpawner>(FindObjectsSortMode.None);
-
-                foreach (var w in unlockedWindows)
-                {
-
-                }
-            }
-        }*/
 
         [HarmonyPostfix, HarmonyPatch(typeof(EnemyAI), "Start")]
         static void Patch_AIStart(EnemyAI __instance)
@@ -417,39 +427,34 @@ namespace ShipWindows
         static void Patch_DespawnProps()
         {
             Log.LogInfo($"RoundManager.DespawnPropsAtEndOfRound -> Is Host:{NetworkHandler.IsHost} / Is Client:{NetworkHandler.IsClient} ");
-            switch (WindowConfig.spaceOutsideSetting.Value)
+
+            if (Flag_CelestialTint == true) return;
+
+            try
             {
-                case 0: break;
+                switch (WindowConfig.spaceOutsideSetting.Value)
+                {
+                    case 0: break;
 
-                case 1:
-                case 2:
-                    // If for whatever reason this code errors, the game breaks.
-                    int? dayNum = StartOfRound.Instance.gameStats?.daysSpent;
-                    float rotation = (dayNum ?? 1) * 80f;
-                    WindowState.Instance.SetVolumeRotation(rotation);
-                    WindowState.Instance.SetVolumeState(true);
-                    break;
+                    case 1:
+                    case 2:
+                        // If for whatever reason this code errors, the game breaks.
+                        int? dayNum = StartOfRound.Instance.gameStats?.daysSpent;
+                        float rotation = (dayNum ?? 1) * 80f;
+                        WindowState.Instance.SetVolumeRotation(rotation);
+                        WindowState.Instance.SetVolumeState(true);
+                        break;
 
-                default: break;
-            }
+                    default: break;
+                }
 
-            GameObject spaceProps = GameObject.Find("Environment/SpaceProps");
-            if (spaceProps != null && WindowConfig.hideSpaceProps.Value == true) spaceProps.SetActive(false);
-        }
-
-        [HarmonyPostfix, HarmonyPatch(typeof(StartOfRound), "ResetShip")]
-        static void Patch_ResetShip()
-        {
-            Log.LogInfo($"StartOfRound.ResetShip -> Is Host:{NetworkHandler.IsHost} / Is Client:{NetworkHandler.IsClient} ");
-
-            if (WindowConfig.windowsUnlockable.Value == true && WindowConfig.vanillaMode.Value == false)
+                GameObject spaceProps = GameObject.Find("Environment/SpaceProps");
+                if (spaceProps != null && WindowConfig.hideSpaceProps.Value == true) spaceProps.SetActive(false);
+            } catch(Exception e)
             {
-                //ObjectReplacer.Restore("ShipInside");
+                Log.LogError(e);
             }
-
-            GameObject renderingObject = GameObject.Find("Systems/Rendering");
-            if (outsideSkybox != null && renderingObject != null)
-                outsideSkybox.transform.position = renderingObject.transform.position;
+            
         }
 
         private static void NetcodePatcher()

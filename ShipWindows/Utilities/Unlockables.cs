@@ -1,16 +1,27 @@
-﻿using GameNetcodeStuff;
-using HarmonyLib;
-using ShipWindows.Networking;
+﻿using HarmonyLib;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using UnityEngine;
 
 namespace ShipWindows.Utilities
 {
     internal class Unlockables
     {
+
+        public static Dictionary<int, string> windowNames = new()
+        {
+            [1] = "Right Window",
+            [2] = "Left Window",
+            [3] = "Floor Window"
+        };
+
+        public static Dictionary<int, string> windowInfo = new()
+        {
+            [1] = "\nAdds a window to the right of the ship's control panel, behind the terminal.\n\n",
+            [2] = "\nAdds a window to the left of the ship's control panel.\n\n",
+            [3] = "\nAdds a window to the floor of the ship.\n\n"
+        };
 
         class WindowUnlockable
         {
@@ -34,8 +45,6 @@ namespace ShipWindows.Utilities
 
                         modifiedDisplayText = modifiedDisplayText.Insert(index + 1, upgradeLine);
                     }
-
-                    modifiedDisplayText += "AAAAA";
                 }
 
             } catch(Exception e)
@@ -59,7 +68,10 @@ namespace ShipWindows.Utilities
 
         public static int AddWindowToUnlockables(Terminal terminal, ShipWindowDef def)
         {
-            string name = $"Window {def.ID}";
+            string name;
+            if (!windowNames.TryGetValue(def.ID, out name))
+                name = $"Window {def.ID}";
+            
             ShipWindowPlugin.Log.LogInfo($"Adding {name} to unlockables...");
 
             int windowUnlockableID = -1;
@@ -105,7 +117,7 @@ namespace ShipWindows.Utilities
 
                 TerminalNode buyNode2 = ScriptableObject.CreateInstance<TerminalNode>();
                 buyNode2.name = $"{name.Replace(" ", "-")}BuyNode2";
-                buyNode2.displayText = $"Ordered {name}! Your new balance is [playerCredits].\n\nPlease clean the windows at the end of your contract.";
+                buyNode2.displayText = $"Ordered {name}! Your new balance is [playerCredits].\n\nPlease clean the windows at the end of your contract.\n\n";
                 buyNode2.clearPreviousText = true;
                 buyNode2.maxCharactersToType = 15;
                 buyNode2.buyItemIndex = -1;
@@ -138,13 +150,15 @@ namespace ShipWindows.Utilities
                     }
                 ];
 
+                string infoText;
+                if (!windowInfo.TryGetValue(def.ID, out infoText))
+                    infoText = $"[No information about this object was found.]\n";
+
                 TerminalNode itemInfo = ScriptableObject.CreateInstance<TerminalNode>();
                 itemInfo.name = $"{name.Replace(" ", "-")}InfoNode";
-                itemInfo.displayText = $"[No information about this object was found.]\n\n";
+                itemInfo.displayText = infoText;
                 itemInfo.clearPreviousText = true;
                 itemInfo.maxCharactersToType = 25;
-
-                //sw.shopSelectionNode = buyNode1;
 
                 var allKeywords = terminal.terminalNodes.allKeywords.ToList();
                 allKeywords.Add(keyword);

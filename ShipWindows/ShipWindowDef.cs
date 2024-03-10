@@ -1,10 +1,6 @@
-﻿using ShipWindows.Components;
-using ShipWindows.Utilities;
-using System;
-using System.Collections.Generic;
-using System.Text;
-using Unity.Netcode;
+﻿using Unity.Netcode;
 using UnityEngine;
+using ShipWindows.Components;
 
 namespace ShipWindows
 {
