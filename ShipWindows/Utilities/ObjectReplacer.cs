@@ -39,13 +39,16 @@ namespace ShipWindows.Utilities
 
             try
             {
+
                 ReplaceInfo info;
                 replacedObjects.TryGetValue(original, out info);
+
+                ShipWindowPlugin.Log.LogInfo($"Restoring object {info.name}...");
 
                 info.original.SetActive(true);
                 info.original.name = info.name;
 
-                UnityEngine.Object.Destroy(info.replacement);
+                UnityEngine.Object.DestroyImmediate(info.replacement);
 
                 replacedObjects.Remove(original);
 
