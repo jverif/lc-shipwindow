@@ -176,5 +176,18 @@ namespace ShipWindows.Utilities
             StartOfRound.Instance.StartCoroutine(WaitAndCheckSwitch());
             newShipInside = null;
         }
+
+        // If any of the window spawners still exist without windows, spawn those windows.
+        public static IEnumerator CheckForKeptSpawners()
+        {
+            yield return null; // next frame
+
+            ShipWindowSpawner[] windows = UnityEngine.Object.FindObjectsByType<ShipWindowSpawner>(FindObjectsSortMode.None);
+
+            foreach (ShipWindowSpawner window in windows)
+            {
+                ReplaceDebounced(true);
+            }
+        }
     }
 }

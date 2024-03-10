@@ -7,13 +7,18 @@ namespace ShipWindows.Components
     {
         public int ID;
 
-        public void Start()
+        public void OnStart()
         {
             ShipWindowPlugin.Log.LogInfo($"We should spawn window {ID}");
 
             // Flag to the mod that we have spawned. It will wait for a moment and then
             // find all ShipWindowSpawners to replace the ship once instead of n times.
             ShipReplacer.ReplaceDebounced(true);
+        }
+
+        public void Start()
+        {
+            OnStart();
         }
 
         public void OnDestroy()

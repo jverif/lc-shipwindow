@@ -23,7 +23,7 @@ namespace ShipWindows.Components
             GetComponent<Animator>()?.SetBool("Closed", closed);
         }
 
-        public void Start()
+        public void OnStart()
         {
             switch (ID)
             {
@@ -62,9 +62,14 @@ namespace ShipWindows.Components
                         if (floodLights != null) floodLights.gameObject.SetActive(false);
                     }
                     break;
-                        
+
                 default: break;
             }
+        }
+
+        public void Start()
+        {
+            OnStart();
         }
 
         public void OnDestroy()

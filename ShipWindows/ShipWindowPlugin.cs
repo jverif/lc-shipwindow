@@ -165,6 +165,12 @@ namespace ShipWindows
             
         }
 
+        [HarmonyPostfix, HarmonyPatch(typeof(StartOfRound), "ResetShip")]
+        static void Patch_ResetShip()
+        {
+            StartOfRound.Instance.StartCoroutine(ShipReplacer.CheckForKeptSpawners());
+        }
+
         [HarmonyPostfix, HarmonyPatch(typeof(StartOfRound), "Start")]
         static void Patch_RoundStart()
         {
