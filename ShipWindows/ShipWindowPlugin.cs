@@ -203,8 +203,8 @@ namespace ShipWindows
             switch (id)
             {
                 case 1: return WindowConfig.enableWindow1.Value;
-                case 2: return WindowConfig.enableWindow1.Value;
-                case 3: return WindowConfig.enableWindow1.Value;
+                case 2: return WindowConfig.enableWindow2.Value;
+                case 3: return WindowConfig.enableWindow3.Value;
             }
 
             return false;
