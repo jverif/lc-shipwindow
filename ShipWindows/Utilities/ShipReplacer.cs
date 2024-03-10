@@ -94,7 +94,7 @@ namespace ShipWindows.Utilities
 
                 if (newShipInside != null && vanillaShipInside != null)
                 {
-                    ShipWindowPlugin.Log.LogError($"Calling ReplaceShip when ship was already replaced! Ignoring...");
+                    ShipWindowPlugin.Log.LogInfo($"Calling ReplaceShip when ship was already replaced! Restoring original...");
                     ObjectReplacer.Restore(vanillaShipInside);
                 }
 
