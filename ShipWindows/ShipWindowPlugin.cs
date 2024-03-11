@@ -21,8 +21,8 @@ namespace ShipWindows
     [BepInPlugin(modGUID, modName, modVersion)]
 
     [CompatibleDependency("NightSkyPlugin", typeof(CelestialTint))]
-    [CompatibleDependency("LethalExpansion", typeof(CelestialTint))]
-    [CompatibleDependency("com.github.lethalmods.lethalexpansioncore", typeof(CelestialTint))]
+    [CompatibleDependency("LethalExpansion", typeof(LethalExpansion))]
+    [CompatibleDependency("com.github.lethalmods.lethalexpansioncore", typeof(LethalExpansion))]
 
     public class ShipWindowPlugin : BaseUnityPlugin
     {
