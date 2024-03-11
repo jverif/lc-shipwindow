@@ -14,17 +14,23 @@ using ShipWindows.Networking;
 using System.Collections.Generic;
 using System.Linq;
 using BepInEx.Bootstrap;
+using ShipWindows.Compatibility;
 
 namespace ShipWindows
 {
     [BepInPlugin(modGUID, modName, modVersion)]
+
+    [CompatibleDependency("NightSkyPlugin", typeof(CelestialTint))]
+    [CompatibleDependency("LethalExpansion", typeof(CelestialTint))]
+    [CompatibleDependency("com.github.lethalmods.lethalexpansioncore", typeof(CelestialTint))]
+
     public class ShipWindowPlugin : BaseUnityPlugin
     {
         private const string modGUID = "veri.lc.shipwindow";
         private const string modName = "Ship Window";
         private const string modVersion = "2.0.0";
 
-        private readonly Harmony harmony = new Harmony(modGUID);
+        public readonly Harmony harmony = new Harmony(modGUID);
 
         public static ShipWindowPlugin Instance { get; private set; }
         public static WindowConfig Cfg { get; internal set; }
@@ -44,9 +50,6 @@ namespace ShipWindows
 
         // Various
         private static Coroutine windowCoroutine;
-
-        // Compatability flags
-        public static bool Flag_CelestialTint = false;
 
         void Awake()
         {
@@ -98,6 +101,9 @@ namespace ShipWindows
 
             harmony.PatchAll(typeof(ShipWindowPlugin));
             harmony.PatchAll(typeof(Unlockables));
+
+            CompatibleDependencyAttribute.Init(this);
+
             Log.LogInfo("Loaded successfully!");
         }
 
@@ -180,8 +186,6 @@ namespace ShipWindows
                 if (WindowConfig.windowsUnlockable.Value == false || WindowConfig.vanillaMode.Value == true)
                     ShipReplacer.ReplaceShip();
 
-                RunCompatPatches();
-
                 AddStars();
                 HideSpaceProps();
 
@@ -241,7 +245,7 @@ namespace ShipWindows
 
         static void AddStars()
         {
-            if (Flag_CelestialTint == true) return;
+            if (CelestialTint.Enabled) return;
 
             GameObject renderingObject = GameObject.Find("Systems/Rendering");
             GameObject vanillaStarSphere = GameObject.Find("Systems/Rendering/StarsSphere");
@@ -295,7 +299,7 @@ namespace ShipWindows
 
         static void HideSpaceProps()
         {
-            if (Flag_CelestialTint == true) return;
+            if (CelestialTint.Enabled == true) return;
 
             if (WindowConfig.hideSpaceProps.Value == true)
             {
@@ -311,43 +315,6 @@ namespace ShipWindows
                 //mls.LogInfo("Spawning network window...");
                 //GameObject windowManagerInstance = Instantiate(windowNetworkPrefab);
                 //windowManagerInstance.GetComponent<NetworkObject>().Spawn();
-            }
-        }
-
-        static void RunCompatPatches()
-        {
-
-            Log.LogInfo("Checking for installed plugins...");
-            List<PluginInfo> plugins = Chainloader.PluginInfos.Values.ToList();
-
-            foreach (var plugin in plugins)
-            {
-                switch (plugin.Metadata.GUID)
-                {
-                    case "LethalExpansion":
-                    case "com.github.lethalmods.lethalexpansioncore":
-                        // https://github.com/jverif/lc-shipwindow/issues/8
-                        // Lethal Expansion "terrainfixer" is positioned at 0, -500, 0 and becomes
-                        // visible when a mod that increases view distance is installed.
-
-                        Log.LogInfo("[Compatibility] Lethal Expansion found.");
-                        GameObject terrainfixer = GameObject.Find("terrainfixer");
-                        if (terrainfixer != null)
-                        {
-                            terrainfixer.transform.position = new Vector3(0, -5000, 0);
-                        }
-                        break;
-
-                    case "NightSkyPlugin":
-                        // Celestial Tint has its own Volume. Ignore Skybox and Space Props settings.
-                        
-                        Log.LogInfo("[Compatibility] Celestial Tint found, setting flag...");
-                        Flag_CelestialTint = true;
-                        
-                        break;
-
-                    default: break;
-                }
             }
         }
 
@@ -396,7 +363,7 @@ namespace ShipWindows
         [HarmonyPostfix, HarmonyPatch(typeof(StartOfRound), "LateUpdate")]
         static void Patch_RoundLateUpdate()
         {
-            if (Flag_CelestialTint == true) return;
+            if (CelestialTint.Enabled == true) return;
             // Make the stars follow the player when they get sucked out of the ship.
             if (outsideSkybox != null)
             {
@@ -464,7 +431,7 @@ namespace ShipWindows
         {
             Log.LogInfo($"RoundManager.DespawnPropsAtEndOfRound -> Is Host:{NetworkHandler.IsHost} / Is Client:{NetworkHandler.IsClient} ");
 
-            if (Flag_CelestialTint == true) return;
+            if (CelestialTint.Enabled == true) return;
 
             try
             {

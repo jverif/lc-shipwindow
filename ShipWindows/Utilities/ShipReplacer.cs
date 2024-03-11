@@ -180,7 +180,7 @@ namespace ShipWindows.Utilities
         // If any of the window spawners still exist without windows, spawn those windows.
         public static IEnumerator CheckForKeptSpawners()
         {
-            yield return null; // next frame
+            yield return new WaitForSeconds(1f);
 
             ShipWindowSpawner[] windows = UnityEngine.Object.FindObjectsByType<ShipWindowSpawner>(FindObjectsSortMode.None);
 
