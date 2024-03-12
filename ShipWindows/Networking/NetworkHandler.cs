@@ -48,7 +48,7 @@ namespace ShipWindows.Networking
             using FastBufferWriter stream = new(1, Allocator.Temp);
             stream.WriteValueSafe(currentState);
 
-            ShipWindowPlugin.Log.LogInfo("Sending window switch toggle message...");
+            //ShipWindowPlugin.Log.LogInfo("Sending window switch toggle message...");
 
             MessageManager.SendNamedMessage("ShipWindow_WindowSwitchUsed", 0ul, stream);
         }
@@ -62,7 +62,7 @@ namespace ShipWindows.Networking
             using FastBufferWriter stream = new(1, Allocator.Temp);
             stream.WriteValueSafe(currentState);
 
-            ShipWindowPlugin.Log.LogInfo($"Received window switch toggle message from client {clientId}");
+            //ShipWindowPlugin.Log.LogInfo($"Received window switch toggle message from client {clientId}");
 
             MessageManager.SendNamedMessageToAll("ShipWindow_WindowSwitchUsedBroadcast", stream);
         }
@@ -72,7 +72,7 @@ namespace ShipWindows.Networking
             bool currentState;
             reader.ReadValueSafe(out currentState);
 
-            ShipWindowPlugin.Log.LogInfo("Received window switch toggle message from server...");
+            //ShipWindowPlugin.Log.LogInfo("Received window switch toggle message from server...");
 
             WindowState.Instance.SetWindowState(!currentState, WindowState.Instance.WindowsLocked);
         }
@@ -137,7 +137,7 @@ namespace ShipWindows.Networking
             WindowState state = DeserializeFromBytes<WindowState>(data);
             WindowState.Instance = state;
 
-            ShipWindowPlugin.Log.LogInfo($"{state.WindowsClosed}, {state.WindowsLocked}, {state.VolumeActive}, {state.VolumeRotation}");
+            //ShipWindowPlugin.Log.LogInfo($"{state.WindowsClosed}, {state.WindowsLocked}, {state.VolumeActive}, {state.VolumeRotation}");
 
             WindowSyncReceivedEvent?.Invoke();
 

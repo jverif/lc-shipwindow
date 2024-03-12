@@ -63,7 +63,7 @@ namespace ShipWindows.Utilities
 
         public static void ReplaceDebounced(bool replace)
         {
-            ShipWindowPlugin.Log.LogInfo($"Debounce replace call. Replace? {replace} Is multiple call: {debounceReplace}");
+            //ShipWindowPlugin.Log.LogInfo($"Debounce replace call. Replace? {replace} Is multiple call: {debounceReplace}");
             if (WindowConfig.windowsUnlockable.Value == false || WindowConfig.vanillaMode.Value == true) return;
             if (debounceReplace) return;
 
@@ -75,7 +75,7 @@ namespace ShipWindows.Utilities
         {
             yield return null; // Wait 1 frame.
 
-            ShipWindowPlugin.Log.LogInfo("Performing ship replacement/restore.");
+            //ShipWindowPlugin.Log.LogInfo("Performing ship replacement/restore.");
             debounceReplace = false;
 
             if (replace)
@@ -94,14 +94,14 @@ namespace ShipWindows.Utilities
 
                 if (newShipInside != null && vanillaShipInside != null)
                 {
-                    ShipWindowPlugin.Log.LogInfo($"Calling ReplaceShip when ship was already replaced! Restoring original...");
+                    //ShipWindowPlugin.Log.LogInfo($"Calling ReplaceShip when ship was already replaced! Restoring original...");
                     ObjectReplacer.Restore(vanillaShipInside);
                 }
 
                 vanillaShipInside = FindOrThrow("Environment/HangarShip/ShipInside");
                 string shipName = GetShipAssetName();
 
-                ShipWindowPlugin.Log.LogInfo($"Replacing ship with {shipName}");
+                //ShipWindowPlugin.Log.LogInfo($"Replacing ship with {shipName}");
 
                 GameObject newShipPrefab = ShipWindowPlugin.mainAssetBundle.LoadAsset<GameObject>
                     ($"Assets/LethalCompany/Mods/ShipWindow/Ships/{shipName}.prefab");
@@ -138,7 +138,7 @@ namespace ShipWindows.Utilities
         {
             if (NetworkManager.Singleton.IsHost || NetworkManager.Singleton.IsServer)
             {
-                ShipWindowPlugin.Log.LogInfo("Checking window switch redundancy...");
+                //ShipWindowPlugin.Log.LogInfo("Checking window switch redundancy...");
                 ShipWindow[] windows = UnityEngine.Object.FindObjectsByType<ShipWindow>(FindObjectsSortMode.None);
 
                 if (windows.Length > 0)

@@ -14,12 +14,6 @@ namespace ShipWindows.Networking
         public bool VolumeActive = true;
         public float VolumeRotation = 0f;
 
-        // From lever, looking out:
-        // TODO: These will be used for syncing unlocks.
-        public bool Window1Active = false; // Left
-        public bool Window2Active = false; // Right
-        public bool Window3Active = false; // Floor
-
         public WindowState()
         {
             Instance = this;
@@ -58,8 +52,7 @@ namespace ShipWindows.Networking
             // By this point the Instance has already been replaced, so we can just update the actual objects
             // with what the values should be.
 
-            ShipWindowPlugin.Log.LogInfo("Applying synced values...");
-            ShipWindowPlugin.Log.LogInfo($"{WindowsClosed}, {WindowsLocked}, {VolumeActive}, {VolumeRotation}");
+            ShipWindowPlugin.Log.LogInfo("Receiving window sync message...");
 
             SetWindowState(WindowsClosed, WindowsLocked);
             SetVolumeState(VolumeActive);

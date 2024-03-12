@@ -239,16 +239,6 @@ namespace ShipWindows
             }
         }
 
-        static void SpawnNetworkManager()
-        {
-            if (NetworkManager.Singleton.IsHost || NetworkManager.Singleton.IsServer)
-            {
-                //mls.LogInfo("Spawning network window...");
-                //GameObject windowManagerInstance = Instantiate(windowNetworkPrefab);
-                //windowManagerInstance.GetComponent<NetworkObject>().Spawn();
-            }
-        }
-
         public static void OpenWindowDelayed(float delay)
         {
             if (windowCoroutine != null) StartOfRound.Instance.StopCoroutine(windowCoroutine);
@@ -302,7 +292,6 @@ namespace ShipWindows
         {
             try
             {
-                SpawnNetworkManager();
                 Unlockables.AddSwitchToUnlockables();
 
                 // The debounce coroutine is cancelled when quitting the game because StartOfRound is destroyed.
@@ -396,7 +385,7 @@ namespace ShipWindows
         [HarmonyPostfix, HarmonyPatch(typeof(StartMatchLever), "PullLeverAnim")]
         static void Patch_StartGame(bool leverPulled)
         {
-            Log.LogInfo($"StartMatchLever.StartGame -> Is Host:{NetworkHandler.IsHost} / Is Client:{NetworkHandler.IsClient} ");
+            //Log.LogInfo($"StartMatchLever.StartGame -> Is Host:{NetworkHandler.IsHost} / Is Client:{NetworkHandler.IsClient} ");
             if (leverPulled)
             {
                 WindowState.Instance.SetWindowState(true, true);
@@ -407,7 +396,7 @@ namespace ShipWindows
         [HarmonyPostfix, HarmonyPatch(typeof(RoundManager), "FinishGeneratingNewLevelClientRpc")]
         static void Patch_OpenDoorSequence()
         {
-            Log.LogInfo($"RoundManager.FinishGeneratingNewLevelClientRpc -> Is Host:{NetworkHandler.IsHost} / Is Client:{NetworkHandler.IsClient} ");
+            //Log.LogInfo($"RoundManager.FinishGeneratingNewLevelClientRpc -> Is Host:{NetworkHandler.IsHost} / Is Client:{NetworkHandler.IsClient} ");
             OpenWindowDelayed(2f);
             WindowState.Instance.SetVolumeState(false);
         }
@@ -415,7 +404,7 @@ namespace ShipWindows
         [HarmonyPostfix, HarmonyPatch(typeof(StartOfRound), "ShipHasLeft")]
         static void Patch_ShipHasLeft()
         {
-            Log.LogInfo($"StartOfRound.ShipHasLeft -> Is Host:{NetworkHandler.IsHost} / Is Client:{NetworkHandler.IsClient} ");
+            //Log.LogInfo($"StartOfRound.ShipHasLeft -> Is Host:{NetworkHandler.IsHost} / Is Client:{NetworkHandler.IsClient} ");
             WindowState.Instance.SetWindowState(true, true);
             OpenWindowDelayed(5f);
         }
@@ -429,7 +418,7 @@ namespace ShipWindows
         [HarmonyPostfix, HarmonyPatch(typeof(RoundManager), "DespawnPropsAtEndOfRound")]
         static void Patch_DespawnProps()
         {
-            Log.LogInfo($"RoundManager.DespawnPropsAtEndOfRound -> Is Host:{NetworkHandler.IsHost} / Is Client:{NetworkHandler.IsClient} ");
+            //Log.LogInfo($"RoundManager.DespawnPropsAtEndOfRound -> Is Host:{NetworkHandler.IsHost} / Is Client:{NetworkHandler.IsClient} ");
 
             if (CelestialTint.Enabled == true) return;
 
