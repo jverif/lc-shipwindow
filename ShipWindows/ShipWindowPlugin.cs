@@ -127,75 +127,6 @@ namespace ShipWindows
             return gameObject;
         }
 
-        [HarmonyPostfix, HarmonyPatch(typeof(GameNetworkManager), "Start")]
-        static void Patch_NetworkStart()
-        {
-            if (WindowConfig.vanillaMode.Value == true) return;
-
-            GameObject shutterSwitchAsset = mainAssetBundle.LoadAsset<GameObject>("Assets/LethalCompany/Mods/ShipWindow/WindowShutterSwitch.prefab");
-            shutterSwitchAsset.AddComponent<ShipWindowShutterSwitch>();
-            NetworkManager.Singleton.AddNetworkPrefab(shutterSwitchAsset);
-
-            windowSwitchPrefab = shutterSwitchAsset;
-            RegisterWindows();
-        }
-
-        [HarmonyPostfix, HarmonyPatch(typeof(Terminal), "Awake")]
-        static void Patch_TerminalAwake(Terminal __instance)
-        {
-            if (WindowConfig.windowsUnlockable.Value == false || WindowConfig.vanillaMode.Value == true) return;
-
-            foreach (var entry in windowRegistry)
-            {
-                int id = Unlockables.AddWindowToUnlockables(__instance, entry.Value);
-                entry.Value.UnlockableID = id;
-            }
-        }
-
-        [HarmonyPostfix, HarmonyPatch(typeof(StartOfRound), "Awake")]
-        static void Patch_RoundAwake()
-        {
-            try
-            {
-                SpawnNetworkManager();
-                Unlockables.AddSwitchToUnlockables();
-
-                // The debounce coroutine is cancelled when quitting the game because StartOfRound is destroyed.
-                // This means the flag doesn't get reset. So, we have to manually reset it at the start.
-                ShipReplacer.debounceReplace = false;
-
-            } catch(Exception e)
-            {
-                Log.LogError(e);
-            }
-            
-        }
-
-        [HarmonyPostfix, HarmonyPatch(typeof(StartOfRound), "ResetShip")]
-        static void Patch_ResetShip()
-        {
-            StartOfRound.Instance.StartCoroutine(ShipReplacer.CheckForKeptSpawners());
-        }
-
-        [HarmonyPostfix, HarmonyPatch(typeof(StartOfRound), "Start")]
-        static void Patch_RoundStart()
-        {
-            try
-            {
-
-                if (WindowConfig.windowsUnlockable.Value == false || WindowConfig.vanillaMode.Value == true)
-                    ShipReplacer.ReplaceShip();
-
-                AddStars();
-                HideSpaceProps();
-
-            } catch (Exception e)
-            {
-                Log.LogError(e);
-            }
-
-        }
-
         static int GetWindowBaseCost(int id)
         {
             switch(id)
@@ -341,6 +272,69 @@ namespace ShipWindows
         // Patches
         // ==============================================================================
 
+        [HarmonyPostfix, HarmonyPatch(typeof(GameNetworkManager), "Start")]
+        static void Patch_NetworkStart()
+        {
+            if (WindowConfig.vanillaMode.Value == true) return;
+
+            GameObject shutterSwitchAsset = mainAssetBundle.LoadAsset<GameObject>("Assets/LethalCompany/Mods/ShipWindow/WindowShutterSwitch.prefab");
+            shutterSwitchAsset.AddComponent<ShipWindowShutterSwitch>();
+            NetworkManager.Singleton.AddNetworkPrefab(shutterSwitchAsset);
+
+            windowSwitchPrefab = shutterSwitchAsset;
+            RegisterWindows();
+        }
+
+        [HarmonyPostfix, HarmonyPatch(typeof(Terminal), "Awake")]
+        static void Patch_TerminalAwake(Terminal __instance)
+        {
+            if (WindowConfig.windowsUnlockable.Value == false || WindowConfig.vanillaMode.Value == true) return;
+
+            foreach (var entry in windowRegistry)
+            {
+                int id = Unlockables.AddWindowToUnlockables(__instance, entry.Value);
+                entry.Value.UnlockableID = id;
+            }
+        }
+
+        [HarmonyPostfix, HarmonyPatch(typeof(StartOfRound), "Awake")]
+        static void Patch_RoundAwake()
+        {
+            try
+            {
+                SpawnNetworkManager();
+                Unlockables.AddSwitchToUnlockables();
+
+                // The debounce coroutine is cancelled when quitting the game because StartOfRound is destroyed.
+                // This means the flag doesn't get reset. So, we have to manually reset it at the start.
+                ShipReplacer.debounceReplace = false;
+
+            } catch (Exception e)
+            {
+                Log.LogError(e);
+            }
+
+        }
+
+        [HarmonyPostfix, HarmonyPatch(typeof(StartOfRound), "Start")]
+        static void Patch_RoundStart()
+        {
+            try
+            {
+
+                if (WindowConfig.windowsUnlockable.Value == false || WindowConfig.vanillaMode.Value == true)
+                    ShipReplacer.ReplaceShip();
+
+                AddStars();
+                HideSpaceProps();
+
+            } catch (Exception e)
+            {
+                Log.LogError(e);
+            }
+
+        }
+
         [HarmonyPostfix, HarmonyPatch(typeof(PlayerControllerB), "ConnectClientToPlayerObject")]
         static void Patch_InitializeLocalPlayer()
         {
@@ -424,6 +418,12 @@ namespace ShipWindows
             Log.LogInfo($"StartOfRound.ShipHasLeft -> Is Host:{NetworkHandler.IsHost} / Is Client:{NetworkHandler.IsClient} ");
             WindowState.Instance.SetWindowState(true, true);
             OpenWindowDelayed(5f);
+        }
+
+        [HarmonyPostfix, HarmonyPatch(typeof(StartOfRound), "ResetShip")]
+        static void Patch_ResetShip()
+        {
+            StartOfRound.Instance.StartCoroutine(ShipReplacer.CheckForKeptSpawners());
         }
 
         [HarmonyPostfix, HarmonyPatch(typeof(RoundManager), "DespawnPropsAtEndOfRound")]
