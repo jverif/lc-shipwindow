@@ -130,6 +130,7 @@ namespace ShipWindows.Utilities
 
                 switchInstance = UnityEngine.GameObject.Instantiate(ShipWindowPlugin.windowSwitchPrefab);
                 switchInstance.GetComponent<NetworkObject>().Spawn();
+                
             }
         }
 
@@ -138,7 +139,7 @@ namespace ShipWindows.Utilities
             if (NetworkManager.Singleton.IsHost || NetworkManager.Singleton.IsServer)
             {
                 ShipWindowPlugin.Log.LogInfo("Checking window switch redundancy...");
-                ShipWindowSpawner[] windows = UnityEngine.Object.FindObjectsByType<ShipWindowSpawner>(FindObjectsSortMode.None);
+                ShipWindow[] windows = UnityEngine.Object.FindObjectsByType<ShipWindow>(FindObjectsSortMode.None);
 
                 if (windows.Length > 0)
                 {
