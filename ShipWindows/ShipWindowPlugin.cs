@@ -1,93 +1,89 @@
 ﻿using BepInEx;
-using BepInEx.Configuration;
 using BepInEx.Logging;
 using HarmonyLib;
 using System;
 using System.Collections;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
 using Unity.Netcode;
 using UnityEngine;
+using ShipWindows.Components;
+using GameNetcodeStuff;
+using ShipWindows.Utilities;
+using ShipWindows.Networking;
+using System.Collections.Generic;
+using System.Linq;
+using BepInEx.Bootstrap;
+using ShipWindows.Compatibility;
 
-namespace ShipWindow
+namespace ShipWindows
 {
     [BepInPlugin(modGUID, modName, modVersion)]
+
+    [CompatibleDependency("NightSkyPlugin", typeof(CelestialTint))]
+    [CompatibleDependency("LethalExpansion", typeof(LethalExpansion))]
+    [CompatibleDependency("com.github.lethalmods.lethalexpansioncore", typeof(LethalExpansion))]
+
     public class ShipWindowPlugin : BaseUnityPlugin
     {
         private const string modGUID = "veri.lc.shipwindow";
         private const string modName = "Ship Window";
-        private const string modVersion = "1.3.6";
+        private const string modVersion = "2.0.0";
 
-        private readonly Harmony harmony = new Harmony(modGUID);
+        public readonly Harmony harmony = new Harmony(modGUID);
 
         public static ShipWindowPlugin Instance { get; private set; }
-        static internal ManualLogSource mls;
+        public static WindowConfig Cfg { get; internal set; }
+        static internal ManualLogSource Log;
 
-        // Configuration, this is so bad lol
-        public static ConfigEntry<bool> enableShutter;
-        public static ConfigEntry<bool> hideSpaceProps;
-        public static ConfigEntry<int> spaceOutsideSetting;
-        public static ConfigEntry<bool> enableWindow1;
-        public static ConfigEntry<bool> enableWindow2;
-        public static ConfigEntry<bool> enableWindow3;
-        public static ConfigEntry<bool> disableUnderLights;
-        public static ConfigEntry<bool> dontMovePosters;
-        public static ConfigEntry<bool> rotateSkybox;
-        public static ConfigEntry<int> skyboxResolution;
-
-        private static AssetBundle mainAssetBundle;
+        public static AssetBundle mainAssetBundle;
 
         // Prefabs
-        private static GameObject windowNetworkPrefab;
-        private static GameObject windowSwitchPrefab;
+        public static GameObject windowSwitchPrefab;
+        public static Dictionary<int, ShipWindowDef> windowRegistry = [];
+
+        // Vanilla object references
+        public static GameObject spaceProps;
 
         // Spawned objects
-        public static GameObject newShipInside;
         public static GameObject outsideSkybox;
 
         // Various
-        public static int switchUnlockableID;
         private static Coroutine windowCoroutine;
-
-        public static string[] window3DisabledList = [
-            "UnderbellyMachineParts",
-            "NurbsPath.001"
-        ];
 
         void Awake()
         {
             if (Instance == null) Instance = this;
-            mls = BepInEx.Logging.Logger.CreateLogSource(modGUID);
+            Log = BepInEx.Logging.Logger.CreateLogSource(modGUID);
+            Cfg = new(base.Config);
 
-            enableShutter = Config.Bind<bool>("General", "EnableWindowShutter", true, "Enable the window shutter to hide level transitions? (default = true)");
-            hideSpaceProps = Config.Bind<bool>("General", "HideSpaceProps", true, "Should the planet and moon outside the ship be hidden? (default = true)");
-            spaceOutsideSetting = Config.Bind<int>("General", "SpaceOutside", 1,
-                "Set this value to control how the outside space looks. (0 = Let other mods handle, 1 = Space HDRI Volume (default), 2 = Black sky with stars)");
-
-            enableWindow1 = Config.Bind<bool>("General", "EnableWindow1", true, "Enable the window to the right of the switch, behind the terminal.");
-            enableWindow2 = Config.Bind<bool>("General", "EnableWindow2", false, "Enable the window to the left of the switch, across from the first window.");
-            enableWindow3 = Config.Bind<bool>("General", "EnableWindow3", false, "Enable the large glass floor.");
-            
-            disableUnderLights = Config.Bind<bool>("General", "DisableUnderLights", false, "Disable the flood lights added under the ship if you have the floor window enabled.");
-            dontMovePosters = Config.Bind<bool>("General", "DontMovePosters", false, "Don't move the poster that blocks the second window if enabled.");
-            rotateSkybox = Config.Bind<bool>("General", "RotateSpaceSkybox", true, "Enable slow rotation of the space skybox for visual effect.");
-            skyboxResolution = Config.Bind<int>("General", "SkyboxResolution", 0, "Sets the skybox resolution (0 = 2K, 1 = 4K) 4K textures may cause performance issues.");
-
-            if (enableWindow1.Value == false && enableWindow2.Value == false && enableWindow3.Value == false)
+            if (WindowConfig.enableWindow1.Value == false && WindowConfig.enableWindow2.Value == false && WindowConfig.enableWindow3.Value == false)
             {
-                mls.LogWarning("All windows are disabled. Please enable any window in your settings for this mod to have any effect.");
+                Log.LogWarning("All windows are disabled. Please enable any window in your settings for this mod to have any effect.");
                 return;
             }
 
-            mls.LogInfo($"Settings Shutter: {enableShutter.Value} | Hide Space Props: {hideSpaceProps.Value} | Space Outside: {spaceOutsideSetting.Value}");
+            Log.LogInfo($"\nCurrent settings:\n"
+                + $"    Vanilla Mode:       {WindowConfig.vanillaMode.Value}\n"
+                + $"    Shutters:           {WindowConfig.enableShutter.Value}\n"
+                + $"    Hide Space Props:   {WindowConfig.hideSpaceProps.Value}\n"
+                + $"    Space Sky:          {WindowConfig.spaceOutsideSetting.Value}\n"
+                + $"    Bottom Lights:      {WindowConfig.disableUnderLights.Value}\n"
+                + $"    Posters:            {WindowConfig.dontMovePosters.Value}\n"
+                + $"    Sky Rotation:       {WindowConfig.rotateSkybox.Value}\n"
+                + $"    Sky Resolution:     {WindowConfig.skyboxResolution.Value}\n"
+                + $"    Windows Unlockable: {WindowConfig.windowsUnlockable.Value}\n"
+
+                + $"    Window 1 Enabled:   {WindowConfig.enableWindow1.Value}\n"
+                + $"    Window 2 Enabled:   {WindowConfig.enableWindow2.Value}\n"
+                + $"    Window 3 Enabled:   {WindowConfig.enableWindow3.Value}\n"
+            );
+
+            
 
             if (!LoadAssetBundle())
             {
-                mls.LogError("Failed to load asset bundle! Abort mission!");
+                Log.LogError("Failed to load asset bundle! Abort mission!");
                 return;
             }
 
@@ -96,18 +92,24 @@ namespace ShipWindow
                 NetcodePatcher();
             } catch(Exception e)
             {
-                mls.LogError("Something went wrong with the netcode patcher!");
-                mls.LogError(e);
+                Log.LogError("Something went wrong with the netcode patcher!");
+                Log.LogError(e);
                 return;
             }
 
+            new WindowState();
+
             harmony.PatchAll(typeof(ShipWindowPlugin));
-            mls.LogInfo("Loaded successfully!");
+            harmony.PatchAll(typeof(Unlockables));
+
+            CompatibleDependencyAttribute.Init(this);
+
+            Log.LogInfo("Loaded successfully!");
         }
 
         bool LoadAssetBundle()
         {
-            mls.LogInfo("Loading ShipWindow AssetBundle...");
+            Log.LogInfo("Loading ShipWindow AssetBundle...");
             string sAssemblyLocation = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
             mainAssetBundle = AssetBundle.LoadFromFile(Path.Combine(sAssemblyLocation, "ship_window"));
 
@@ -115,14 +117,6 @@ namespace ShipWindow
                 return false;
 
             return true;
-        }
-
-        static string GetShipAssetName()
-        {
-            bool w1 = enableWindow1.Value;
-            bool w2 = enableWindow2.Value;
-            bool w3 = enableWindow3.Value;
-            return $"ShipInsideWithWindow{(w1 ? 1 : 0)}{(w2 ? 1 : 0)}{(w3 ? 1 : 0)}";
         }
 
         static GameObject FindOrThrow(string name)
@@ -133,175 +127,61 @@ namespace ShipWindow
             return gameObject;
         }
 
-        static int AddSwitchToUnlockables()
+        static int GetWindowBaseCost(int id)
         {
-            string name = "Shutter Switch";
-            UnlockablesList unlockablesList = StartOfRound.Instance.unlockablesList;
-
-            // When running in unity editor this function permanently edits the unlockables list.
-            // To keep from duplicating a ton, check if the unlockable is already there and use it's ID instead.
-
-            int index = unlockablesList.unlockables.FindIndex(unlockable => unlockable.unlockableName == name);
-
-            if (index == -1)
+            switch(id)
             {
-                UnlockableItem sw = new UnlockableItem();
-                sw.unlockableName = name;
-                sw.spawnPrefab = false;
-                sw.unlockableType = 1;
-                sw.IsPlaceable = true;
-                sw.maxNumber = 1;
-                sw.canBeStored = false;
-                sw.alreadyUnlocked = true;
-
-                unlockablesList.unlockables.Capacity++;
-                unlockablesList.unlockables.Add(sw);
-                switchUnlockableID = unlockablesList.unlockables.FindIndex(unlockable => unlockable.unlockableName == name);
-            } else
-            {
-                switchUnlockableID = index;
+                case 1: return WindowConfig.window1Cost.Value;
+                case 2: return WindowConfig.window2Cost.Value;
+                case 3: return WindowConfig.window3Cost.Value;
             }
 
-            mls.LogInfo($"Added shutter switch to unlockables list at ID {switchUnlockableID}");
-
-            return switchUnlockableID;
+            return 60; // Shouldn't happen, but just in case.
         }
 
-        [HarmonyPostfix, HarmonyPatch(typeof(GameNetworkManager), "Start")]
-        static void Patch_NetworkStart()
+        public static bool IsWindowEnabled(int id)
         {
-            if (windowNetworkPrefab != null) return;
-
-            GameObject winNetAsset = mainAssetBundle.LoadAsset<GameObject>("Assets/LethalCompany/Mods/ShipWindow/WindowNetworkManager.prefab");
-            winNetAsset.AddComponent<ShipWindowNetworkManager>();
-            //winNetAsset.GetComponent<NetworkObject>().DontDestroyWithOwner = true;
-            //winNetAsset.GetComponent<NetworkObject>().SceneMigrationSynchronization = true;
-            //winNetAsset.GetComponent<NetworkObject>().DestroyWithScene = false;
-            NetworkManager.Singleton.AddNetworkPrefab(winNetAsset);
-
-            windowNetworkPrefab = winNetAsset;
-
-            GameObject shutterSwitchAsset = mainAssetBundle.LoadAsset<GameObject>("Assets/LethalCompany/Mods/ShipWindow/WindowShutterSwitch.prefab");
-            shutterSwitchAsset.AddComponent<ShipWindowShutterSwitch>();
-            NetworkManager.Singleton.AddNetworkPrefab(shutterSwitchAsset);
-
-            windowSwitchPrefab = shutterSwitchAsset;
-        }
-
-        [HarmonyPostfix, HarmonyPatch(typeof(StartOfRound), "Awake")]
-        static void Patch_RoundAwake()
-        {
-            try
+            switch (id)
             {
-
-                ReplaceShip();
-                AddStars();
-                HideSpaceProps();
-                SpawnNetworkManager();
-                SpawnSwitch();
-
-            } catch(Exception e)
-            {
-                mls.LogError(e);
-            }
-            
-        }
-
-        [HarmonyPostfix, HarmonyPatch(typeof(StartOfRound), "Start")]
-        static void Patch_RoundStart()
-        {
-            try
-            {
-                RunCompatPatches();
-            } catch (Exception e)
-            {
-                mls.LogError(e);
+                case 1: return WindowConfig.enableWindow1.Value;
+                case 2: return WindowConfig.enableWindow2.Value;
+                case 3: return WindowConfig.enableWindow3.Value;
             }
 
+            return false;
         }
 
-        static void AddWindowScripts(GameObject ship)
+        public static bool IsWindowDefaultUnlocked(int id)
         {
-            Transform container = ship.transform.Find("WindowContainer");
-            if (container == null) return;
+            switch (id)
+            {
+                case 1: return WindowConfig.defaultWindow1.Value;
+                case 2: return WindowConfig.defaultWindow2.Value;
+                case 3: return WindowConfig.defaultWindow3.Value;
+            }
 
-            foreach (Transform window in container)
-                window.gameObject.AddComponent<ShipWindow>();
+            return false;
         }
 
-        static void ReplaceShip()
+        static void RegisterWindows()
         {
-            GameObject vanillaShipInside = FindOrThrow("Environment/HangarShip/ShipInside");
-
-            string shipName = GetShipAssetName();
-
-            GameObject newShipPrefab = mainAssetBundle.LoadAsset<GameObject>($"Assets/LethalCompany/Mods/ShipWindow/Ships/{shipName}.prefab");
-            if (newShipPrefab == null) throw new Exception($"Could not load requested ship replacement! {shipName}");
-
-            AddWindowScripts(newShipPrefab);
-
-            newShipInside = Instantiate(newShipPrefab, vanillaShipInside.transform.parent);
-            newShipInside.transform.position = vanillaShipInside.transform.position;
-            newShipInside.transform.rotation = vanillaShipInside.transform.rotation;
-            newShipInside.SetActive(true);
-            vanillaShipInside.SetActive(false);
-
-            // Rename objects
-            vanillaShipInside.name = "ShipInside (Old)";
-            newShipInside.name = "ShipInside";
-
-            // Misc objects, TODO: Clean up, move to own function.
-
-            if (enableWindow2.Value == true && dontMovePosters.Value == false)
+            for (int id = 1; id <= 3; id++)
             {
-                GameObject movedPostersPrefab = mainAssetBundle.LoadAsset<GameObject>($"Assets/LethalCompany/Mods/ShipWindow/ShipPosters.prefab");
-                if (movedPostersPrefab != null)
-                {
-                    Transform oldPosters = newShipInside.transform.parent.Find("Plane.001");
-                    if (oldPosters != null)
-                    {
-                        GameObject newPosters = Instantiate(movedPostersPrefab, newShipInside.transform.parent);
-                        newPosters.transform.position = oldPosters.transform.position;
-                        newPosters.transform.rotation = oldPosters.transform.rotation;
+                if (!IsWindowEnabled(id)) continue;
 
-                        oldPosters.name = "Plane.001 (Old)";
-                        newPosters.name = "Plane.001";
-
-                        oldPosters.gameObject.SetActive(false);
-                    }
-                }
-            }
-
-            if (enableWindow3.Value == false) return;
-            mls.LogInfo($"Disabling misc objects under ship... {enableWindow3.Value}");
-
-            foreach (string go in window3DisabledList)
-            {
-                var obj = GameObject.Find($"Environment/HangarShip/{go}");
-                if (obj == null) {
-                    mls.LogWarning($"Searched for {go}, but could not find!");
-                    continue; 
-                };
-
-                mls.LogInfo($"Found {go}, disabling...");
-
-                obj.gameObject.SetActive(false);
-            }
-
-            if (disableUnderLights.Value == true)
-            {
-                mls.LogInfo("Disabling flood lights under ship...");
-                Transform floodLights = newShipInside.transform.Find("WindowContainer/Window3/Lights");
-                if (floodLights != null) floodLights.gameObject.SetActive(false);
+                ShipWindowDef def = ShipWindowDef.Register(id, GetWindowBaseCost(id));
+                windowRegistry.Add(id, def);
             }
         }
 
         static void AddStars()
         {
+            if (CelestialTint.Enabled) return;
+
             GameObject renderingObject = GameObject.Find("Systems/Rendering");
             GameObject vanillaStarSphere = GameObject.Find("Systems/Rendering/StarsSphere");
 
-            switch (spaceOutsideSetting.Value)
+            switch (WindowConfig.spaceOutsideSetting.Value)
             {
                 // do nothing
                 case 0:
@@ -319,7 +199,7 @@ namespace ShipWindow
                     outsideSkybox.AddComponent<SpaceSkybox>();
 
                     // Load texture
-                    if (skyboxResolution.Value == 1) // 4K
+                    if (WindowConfig.skyboxResolution.Value == 1) // 4K
                     {
                         Texture2D skybox4K = mainAssetBundle.LoadAsset<Texture2D>("Assets/LethalCompany/Mods/ShipWindow/Textures/Space4KCube.png");
                         if (skybox4K != null)
@@ -350,96 +230,134 @@ namespace ShipWindow
 
         static void HideSpaceProps()
         {
-            if (hideSpaceProps.Value == true)
+            if (CelestialTint.Enabled == true) return;
+
+            if (WindowConfig.hideSpaceProps.Value == true)
             {
                 GameObject spaceProps = GameObject.Find("Environment/SpaceProps");
                 if (spaceProps != null) spaceProps.SetActive(false);
             }
         }
 
-        static void SpawnNetworkManager()
+        public static void OpenWindowDelayed(float delay)
         {
-            if (NetworkManager.Singleton.IsHost || NetworkManager.Singleton.IsServer)
-            {
-                mls.LogInfo("Spawning network window...");
-                GameObject windowManagerInstance = Instantiate(windowNetworkPrefab);
-                windowManagerInstance.GetComponent<NetworkObject>().Spawn();
-            }
+            if (windowCoroutine != null) StartOfRound.Instance.StopCoroutine(windowCoroutine);
+            windowCoroutine = StartOfRound.Instance.StartCoroutine(OpenWindowCoroutine(delay));
         }
 
-        static void SpawnSwitch()
+        private static IEnumerator OpenWindowCoroutine(float delay)
         {
-            if (windowSwitchPrefab != null)
-            {
-                int id = AddSwitchToUnlockables();
-                var shipObject = windowSwitchPrefab.GetComponentInChildren<PlaceableShipObject>();
-                shipObject.unlockableID = id;
-            }
-
-            if (NetworkManager.Singleton.IsHost || NetworkManager.Singleton.IsServer)
-            {
-                mls.LogInfo("Spawning shutter switch...");
-                if (windowSwitchPrefab != null)
-                {
-                    GameObject switchInstance = Instantiate(windowSwitchPrefab);
-                    switchInstance.GetComponent<NetworkObject>().Spawn();
-                }
-            }
-        }
-
-        static void TrySetWindowClosed(bool closed, bool locked)
-        {
-            if (enableShutter.Value == false) return;
-
-            mls.LogInfo("Setting window closed: " + closed);
-            if (ShipWindowNetworkManager.Instance != null)
-            {
-                if (NetworkManager.Singleton.IsHost || NetworkManager.Singleton.IsServer)
-                    ShipWindowNetworkManager.Instance.SetWindowStateClientRpc(closed, locked);
-                else
-                    ShipWindowNetworkManager.Instance.SetWindowState(closed, locked);
-            }
-        }
-
-        static void RunCompatPatches()
-        {
-            // https://github.com/jverif/lc-shipwindow/issues/8
-            // Lethal Expansion "terrainfixer" is positioned at 0, -500, 0 and becomes
-            // visible when a mod that increases view distance is installed.
-            GameObject terrainfixer = GameObject.Find("terrainfixer");
-            if (terrainfixer != null)
-            {
-                terrainfixer.transform.position = new Vector3(0, -5000, 0);
-            }
-        }
-
-        static IEnumerator OpenWindowCoroutine(float delay)
-        {
-            mls.LogInfo("Opening window in " + delay + " seconds...");
+            Log.LogInfo("Opening window in " + delay + " seconds...");
             yield return new WaitForSeconds(delay);
-            TrySetWindowClosed(false, false);
+            WindowState.Instance.SetWindowState(false, false);
             windowCoroutine = null;
+        }
+
+        private static void HandleWindowSync()
+        {
+            WindowState.Instance.ReceiveSync();
         }
 
         // ==============================================================================
         // Patches
         // ==============================================================================
+
+        [HarmonyPostfix, HarmonyPatch(typeof(GameNetworkManager), "Start")]
+        static void Patch_NetworkStart()
+        {
+            if (WindowConfig.vanillaMode.Value == true) return;
+
+            GameObject shutterSwitchAsset = mainAssetBundle.LoadAsset<GameObject>("Assets/LethalCompany/Mods/ShipWindow/WindowShutterSwitch.prefab");
+            shutterSwitchAsset.AddComponent<ShipWindowShutterSwitch>();
+            NetworkManager.Singleton.AddNetworkPrefab(shutterSwitchAsset);
+
+            windowSwitchPrefab = shutterSwitchAsset;
+            RegisterWindows();
+        }
+
+        [HarmonyPostfix, HarmonyPatch(typeof(Terminal), "Awake")]
+        static void Patch_TerminalAwake(Terminal __instance)
+        {
+            if (WindowConfig.windowsUnlockable.Value == false || WindowConfig.vanillaMode.Value == true) return;
+
+            foreach (var entry in windowRegistry)
+            {
+                int id = Unlockables.AddWindowToUnlockables(__instance, entry.Value);
+                entry.Value.UnlockableID = id;
+            }
+        }
+
+        [HarmonyPostfix, HarmonyPatch(typeof(StartOfRound), "Awake")]
+        static void Patch_RoundAwake()
+        {
+            try
+            {
+                Unlockables.AddSwitchToUnlockables();
+
+                // The debounce coroutine is cancelled when quitting the game because StartOfRound is destroyed.
+                // This means the flag doesn't get reset. So, we have to manually reset it at the start.
+                ShipReplacer.debounceReplace = false;
+
+            } catch (Exception e)
+            {
+                Log.LogError(e);
+            }
+
+        }
+
+        [HarmonyPostfix, HarmonyPatch(typeof(StartOfRound), "Start")]
+        static void Patch_RoundStart()
+        {
+            try
+            {
+
+                if (WindowConfig.windowsUnlockable.Value == false || WindowConfig.vanillaMode.Value == true)
+                    ShipReplacer.ReplaceShip();
+
+                AddStars();
+                HideSpaceProps();
+
+            } catch (Exception e)
+            {
+                Log.LogError(e);
+            }
+
+        }
+
+        [HarmonyPostfix, HarmonyPatch(typeof(PlayerControllerB), "ConnectClientToPlayerObject")]
+        static void Patch_InitializeLocalPlayer()
+        {
+            NetworkHandler.RegisterMessages();
+            NetworkHandler.WindowSyncReceivedEvent += HandleWindowSync;
+
+            if (!NetworkHandler.IsHost)
+            {
+                NetworkHandler.RequestWindowSync();
+            }
+        }
+
+        [HarmonyPostfix, HarmonyPatch(typeof(GameNetworkManager), "StartDisconnect")]
+        static void Patch_PlayerLeave()
+        {
+            NetworkHandler.UnregisterMessages();
+            NetworkHandler.WindowSyncReceivedEvent -= HandleWindowSync;
+        }
+
         [HarmonyPostfix, HarmonyPatch(typeof(StartOfRound), "LateUpdate")]
         static void Patch_RoundLateUpdate()
         {
+            if (CelestialTint.Enabled == true) return;
             // Make the stars follow the player when they get sucked out of the ship.
-            if (StartOfRound.Instance.suckingPlayersOutOfShip)
+            if (outsideSkybox != null)
             {
-                if (outsideSkybox != null)
+                if (StartOfRound.Instance.suckingPlayersOutOfShip)
+                {
                     outsideSkybox.transform.position = GameNetworkManager.Instance.localPlayerController.transform.position;
-            } else
-            {
-                // TODO: Patch something else to move this back so we aren't doing it every frame.
-                GameObject renderingObject = GameObject.Find("Systems/Rendering");
-                if (outsideSkybox != null && renderingObject != null)
-                    outsideSkybox.transform.position = renderingObject.transform.position;
+                } else
+                {
+                    outsideSkybox.transform.localPosition = Vector3.zero;
+                }
             }
-
         }
 
         [HarmonyPostfix, HarmonyPatch(typeof(EnemyAI), "Start")]
@@ -464,62 +382,71 @@ namespace ShipWindow
                 array[j].EnableEnemyMesh(enable: true);
         }
 
-        [HarmonyPostfix, HarmonyPatch(typeof(StartMatchLever), "StartGame")]
-        static void Patch_StartGame()
+        [HarmonyPostfix, HarmonyPatch(typeof(StartMatchLever), "PullLeverAnim")]
+        static void Patch_StartGame(bool leverPulled)
         {
-            TrySetWindowClosed(true, true);
+            //Log.LogInfo($"StartMatchLever.StartGame -> Is Host:{NetworkHandler.IsHost} / Is Client:{NetworkHandler.IsClient} ");
+            if (leverPulled)
+            {
+                WindowState.Instance.SetWindowState(true, true);
+            }
         }
 
         // TODO: This does not need to be networked anymore.
         [HarmonyPostfix, HarmonyPatch(typeof(RoundManager), "FinishGeneratingNewLevelClientRpc")]
         static void Patch_OpenDoorSequence()
         {
-            if (windowCoroutine != null) StartOfRound.Instance.StopCoroutine(windowCoroutine);
-            windowCoroutine = StartOfRound.Instance.StartCoroutine(OpenWindowCoroutine(2f));
-        }
-
-        [HarmonyPostfix, HarmonyPatch(typeof(RoundManager), "LoadNewLevel")]
-        static void Patch_LoadNewLevel()
-        {
-
-            if (ShipWindowNetworkManager.Instance != null)
-            {
-                mls.LogInfo("Disabling universe volume / star sphere.");
-                if (NetworkManager.Singleton.IsHost || NetworkManager.Singleton.IsServer)
-                    ShipWindowNetworkManager.Instance.SetVolumeStateClientRpc(false);
-                else
-                    ShipWindowNetworkManager.Instance.SetVolumeState(false);
-            }
+            //Log.LogInfo($"RoundManager.FinishGeneratingNewLevelClientRpc -> Is Host:{NetworkHandler.IsHost} / Is Client:{NetworkHandler.IsClient} ");
+            OpenWindowDelayed(2f);
+            WindowState.Instance.SetVolumeState(false);
         }
 
         [HarmonyPostfix, HarmonyPatch(typeof(StartOfRound), "ShipHasLeft")]
         static void Patch_ShipHasLeft()
         {
-            TrySetWindowClosed(true, true);
+            //Log.LogInfo($"StartOfRound.ShipHasLeft -> Is Host:{NetworkHandler.IsHost} / Is Client:{NetworkHandler.IsClient} ");
+            WindowState.Instance.SetWindowState(true, true);
+            OpenWindowDelayed(5f);
+        }
 
-            if (windowCoroutine != null) StartOfRound.Instance.StopCoroutine(windowCoroutine);
-            windowCoroutine = StartOfRound.Instance.StartCoroutine(OpenWindowCoroutine(5f));
+        [HarmonyPostfix, HarmonyPatch(typeof(StartOfRound), "ResetShip")]
+        static void Patch_ResetShip()
+        {
+            StartOfRound.Instance.StartCoroutine(ShipReplacer.CheckForKeptSpawners());
         }
 
         [HarmonyPostfix, HarmonyPatch(typeof(RoundManager), "DespawnPropsAtEndOfRound")]
         static void Patch_DespawnProps()
         {
-            switch (spaceOutsideSetting.Value)
+            //Log.LogInfo($"RoundManager.DespawnPropsAtEndOfRound -> Is Host:{NetworkHandler.IsHost} / Is Client:{NetworkHandler.IsClient} ");
+
+            if (CelestialTint.Enabled == true) return;
+
+            try
             {
-                case 0: break;
+                switch (WindowConfig.spaceOutsideSetting.Value)
+                {
+                    case 0: break;
 
-                case 1:
-                case 2:
-                    int dayNum = StartOfRound.Instance.gameStats.daysSpent;
-                    SpaceSkybox.Instance?.SetRotation(dayNum * 80f);
-                    outsideSkybox.SetActive(true);
-                    break;
+                    case 1:
+                    case 2:
+                        // If for whatever reason this code errors, the game breaks.
+                        int? dayNum = StartOfRound.Instance.gameStats?.daysSpent;
+                        float rotation = (dayNum ?? 1) * 80f;
+                        WindowState.Instance.SetVolumeRotation(rotation);
+                        WindowState.Instance.SetVolumeState(true);
+                        break;
 
-                default: break;
+                    default: break;
+                }
+
+                GameObject spaceProps = GameObject.Find("Environment/SpaceProps");
+                if (spaceProps != null && WindowConfig.hideSpaceProps.Value == true) spaceProps.SetActive(false);
+            } catch(Exception e)
+            {
+                Log.LogError(e);
             }
-
-            GameObject spaceProps = GameObject.Find("Environment/SpaceProps");
-            if (spaceProps != null && hideSpaceProps.Value == true) spaceProps.SetActive(false);
+            
         }
 
         private static void NetcodePatcher()
