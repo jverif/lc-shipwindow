@@ -41,8 +41,9 @@ namespace ShipWindows.Utilities
 
                     foreach (var unlock in unlocks.Reverse())
                     {
-                        string upgradeLine = $"\n* {unlock.Value.name}    //    Price: ${unlock.Value.price}";
+                        if (ShipWindowPlugin.IsWindowDefaultUnlocked(unlock.Key)) continue;
 
+                        string upgradeLine = $"\n* {unlock.Value.name}    //    Price: ${unlock.Value.price}";
                         modifiedDisplayText = modifiedDisplayText.Insert(index + 1, upgradeLine);
                     }
                 }
