@@ -10,9 +10,12 @@ namespace ShipWindows.Compatibility
     {
         public static bool Enabled { get; private set; }
 
-        static void Initialize()
+        static bool Initialize()
         {
+            if (Enabled) return false;
             Enabled = true;
+
+            return true;
         }
 
         [HarmonyPostfix, HarmonyPatch(typeof(StartOfRound), "Start")]

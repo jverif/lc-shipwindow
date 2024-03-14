@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Text;
+using System.Linq;
 
 namespace ShipWindows.Compatibility
 {
@@ -14,6 +15,7 @@ namespace ShipWindows.Compatibility
     internal class CompatibleDependencyAttribute : BepInDependency
     {
         public System.Type Handler;
+        public Version VersionRequired;
 
         /// <summary>
         /// Marks this BepInEx.BaseUnityPlugin as soft depenant on another plugin.
@@ -24,6 +26,12 @@ namespace ShipWindows.Compatibility
         public CompatibleDependencyAttribute(string guid, System.Type handlerType) : base(guid, DependencyFlags.SoftDependency)
         {
             Handler = handlerType;
+        }
+
+        public CompatibleDependencyAttribute(string guid, string versionRequired, System.Type handlerType) : base(guid, DependencyFlags.SoftDependency)
+        {
+            Handler = handlerType;
+            VersionRequired = new Version(versionRequired);
         }
 
         /// <summary>
@@ -40,11 +48,27 @@ namespace ShipWindows.Compatibility
             {
                 if (Chainloader.PluginInfos.ContainsKey(attr.DependencyGUID))
                 {
-                    ShipWindowPlugin.Log.LogInfo($"Found compatible mod:  {attr.DependencyGUID}");
-                    attr.Handler.GetMethod("Initialize", bindingFlags)?.Invoke(null, null);
 
-                    // we do a little hehe
-                    ShipWindowPlugin.Instance.harmony.PatchAll(attr.Handler);
+                    PluginInfo info = Chainloader.PluginInfos[attr.DependencyGUID];
+                    if (attr.VersionRequired == null || attr.VersionRequired.CompareTo(info.Metadata.Version) <= 0)
+                    {
+                        ShipWindowPlugin.Log.LogInfo($"Found compatible mod:  {attr.DependencyGUID} {info.Metadata.Version}");
+                        bool res = (bool)attr.Handler.GetMethod("Initialize", bindingFlags)?.Invoke(null, null);
+
+                        if (res)
+                        {
+                            // we do a little hehe
+                            ShipWindowPlugin.Instance.harmony.PatchAll(attr.Handler);
+                        } else
+                        {
+                            ShipWindowPlugin.Log.LogInfo($"Found compatible mod, but patches have already been applied:  {attr.DependencyGUID} {info.Metadata.Version}");
+                        }
+
+                        
+                    } else
+                    {
+                        ShipWindowPlugin.Log.LogInfo($"Found compatible mod, but it does not meet version requirements:  {attr.DependencyGUID} {info.Metadata.Version}");
+                    }
 
                     attr.Handler = null;
                 } else

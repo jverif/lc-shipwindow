@@ -22,11 +22,16 @@ Thunderstore Link: https://thunderstore.io/c/lethal-company/p/veri/ShipWindows/
 - Update shutter mesh
 - Window decorations (curtains, etc.)
 - Open / close sounds.
+- Door windows
 
 ## Thanks to
 - Soup (@souper194) - Shutter texture used on versions >= 1.2.0
 
 ## Update History
+
+- **2.0.2**
+    - Fix black sky with certain mod configurations.
+    - Don't show windows unlocked by default in Ship Upgrades section.
 
 - **2.0.1**
     - Fix issue causing furniture desync.
