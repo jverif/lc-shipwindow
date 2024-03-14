@@ -275,16 +275,23 @@ namespace ShipWindows
             RegisterWindows();
         }
 
-        [HarmonyPostfix, HarmonyPatch(typeof(Terminal), "Awake")]
+        [HarmonyPrefix, HarmonyPatch(typeof(Terminal), "Awake")]
         static void Patch_TerminalAwake(Terminal __instance)
         {
-            if (WindowConfig.windowsUnlockable.Value == false || WindowConfig.vanillaMode.Value == true) return;
-
-            foreach (var entry in windowRegistry)
+            try
             {
-                int id = Unlockables.AddWindowToUnlockables(__instance, entry.Value);
-                entry.Value.UnlockableID = id;
+                if (WindowConfig.windowsUnlockable.Value == false || WindowConfig.vanillaMode.Value == true) return;
+
+                foreach (var entry in windowRegistry)
+                {
+                    int id = Unlockables.AddWindowToUnlockables(__instance, entry.Value);
+                    entry.Value.UnlockableID = id;
+                }
+            } catch(Exception e)
+            {
+                Log.LogError($"Error occurred registering window unlockables...\n{e}");
             }
+            
         }
 
         [HarmonyPostfix, HarmonyPatch(typeof(StartOfRound), "Awake")]
