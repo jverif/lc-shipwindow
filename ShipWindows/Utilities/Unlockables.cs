@@ -222,6 +222,12 @@ namespace ShipWindows.Utilities
                 switchUnlockableID = index;
             }
 
+            if (ShipWindowPlugin.windowSwitchPrefab)
+            {
+                var shipObject = ShipWindowPlugin.windowSwitchPrefab.GetComponentInChildren<PlaceableShipObject>();
+                shipObject.unlockableID = switchUnlockableID;
+            }
+
             ShipWindowPlugin.Log.LogInfo($"Added shutter switch to unlockables list at ID {switchUnlockableID}");
 
             return switchUnlockableID;

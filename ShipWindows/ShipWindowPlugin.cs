@@ -272,6 +272,7 @@ namespace ShipWindows
             NetworkManager.Singleton.AddNetworkPrefab(shutterSwitchAsset);
 
             windowSwitchPrefab = shutterSwitchAsset;
+
             RegisterWindows();
         }
 
@@ -299,7 +300,8 @@ namespace ShipWindows
         {
             try
             {
-                Unlockables.AddSwitchToUnlockables();
+                if (WindowConfig.vanillaMode.Value == false)
+                    Unlockables.AddSwitchToUnlockables();
 
                 // The debounce coroutine is cancelled when quitting the game because StartOfRound is destroyed.
                 // This means the flag doesn't get reset. So, we have to manually reset it at the start.

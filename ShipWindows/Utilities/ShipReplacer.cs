@@ -124,10 +124,6 @@ namespace ShipWindows.Utilities
             ShipWindowPlugin.Log.LogInfo("Spawning shutter switch...");
             if (ShipWindowPlugin.windowSwitchPrefab != null)
             {
-                int id = Unlockables.AddSwitchToUnlockables();
-                var shipObject = ShipWindowPlugin.windowSwitchPrefab.GetComponentInChildren<PlaceableShipObject>();
-                shipObject.unlockableID = id;
-
                 switchInstance = UnityEngine.GameObject.Instantiate(ShipWindowPlugin.windowSwitchPrefab);
                 switchInstance.GetComponent<NetworkObject>().Spawn();
                 

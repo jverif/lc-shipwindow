@@ -28,6 +28,9 @@ Thunderstore Link: https://thunderstore.io/c/lethal-company/p/veri/ShipWindows/
 
 ## Update History
 
+- **2.0.1**
+    - Fix issue causing furniture desync.
+
 - **2.0.0**
     - Windows as unlockables. Use the terminal store to purchase windows for your ship.
     - Vanilla compatibility option (disables switch and unlockables).
