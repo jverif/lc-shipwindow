@@ -301,7 +301,13 @@ namespace ShipWindows
             try
             {
                 if (WindowConfig.vanillaMode.Value == false)
+                {
+                    // The switch will be removed by a later function if it is not needed
+                    // Spawning here will let the (potential) saved position be restored.
                     Unlockables.AddSwitchToUnlockables();
+                    ShipReplacer.SpawnSwitch();
+                }
+                    
 
                 // The debounce coroutine is cancelled when quitting the game because StartOfRound is destroyed.
                 // This means the flag doesn't get reset. So, we have to manually reset it at the start.

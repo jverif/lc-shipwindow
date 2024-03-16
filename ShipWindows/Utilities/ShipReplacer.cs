@@ -121,6 +121,13 @@ namespace ShipWindows.Utilities
 
         public static void SpawnSwitch()
         {
+            var windowSwitch = UnityEngine.Object.FindFirstObjectByType<ShipWindowShutterSwitch>();
+            if (windowSwitch != null)
+            {
+                switchInstance = windowSwitch.gameObject;
+                return;
+            }
+
             ShipWindowPlugin.Log.LogInfo("Spawning shutter switch...");
             if (ShipWindowPlugin.windowSwitchPrefab != null)
             {
