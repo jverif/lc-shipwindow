@@ -9,6 +9,23 @@ namespace ShipWindows.Utilities
 
         private static Dictionary<GameObject, ReplaceInfo> replacedObjects = new();
 
+        public static void ReplaceMaterial(GameObject fromObj, GameObject toObj)
+        {
+            try
+            {
+                MeshRenderer mesh1 = fromObj.GetComponent<MeshRenderer>();
+                MeshRenderer mesh2 = toObj.GetComponent<MeshRenderer>();
+
+                if (!mesh1 || !mesh2) return;
+
+                mesh2.material = mesh1.material;
+
+            } catch (Exception e)
+            {
+                ShipWindowPlugin.Log.LogError($"Could not replace object material:\n{e}");
+            }
+        }
+
         public static GameObject Replace(GameObject original, GameObject prefab)
         {
             ShipWindowPlugin.Log.LogInfo($"Replacing object {original.name} with {prefab.name}...");

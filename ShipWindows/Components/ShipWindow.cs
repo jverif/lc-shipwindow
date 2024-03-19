@@ -40,7 +40,10 @@ namespace ShipWindows.Components
                             if (oldPosters != null)
                             {
                                 oldPostersObject = oldPosters.gameObject;
-                                ObjectReplacer.Replace(oldPostersObject, movedPostersPrefab);
+                                GameObject newPosters = ObjectReplacer.Replace(oldPostersObject, movedPostersPrefab);
+
+                                // Support for custom posters.
+                                ObjectReplacer.ReplaceMaterial(oldPostersObject, newPosters);
                             }
                         }
                     }
