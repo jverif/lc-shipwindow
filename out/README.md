@@ -15,6 +15,8 @@ Thunderstore Link: https://thunderstore.io/c/lethal-company/p/veri/ShipWindows/
 
 ## Recommended Mods
 - **[Celestial Tint](https://thunderstore.io/c/lethal-company/p/sfDesat/Celestial_Tint/)** by **sfDesat** - For an amazing view of space outside the windows.
+OR
+- **[Ship Windows 4K Skybox](https://thunderstore.io/c/lethal-company/p/veri/ShipWindows_4K_Skybox/)** by **veri** - For a higher definition space skybox. This does not work with Celestial Tint.
 
 ## Planned Features
 - Update window shapes and add trim.
