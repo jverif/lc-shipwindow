@@ -5,6 +5,7 @@ namespace ShipWindows
     public class WindowConfig
     {
         public static ConfigEntry<bool> vanillaMode;
+        public static ConfigEntry<bool> glassRefraction;
         public static ConfigEntry<bool> enableShutter;
         public static ConfigEntry<bool> hideSpaceProps;
         public static ConfigEntry<int> spaceOutsideSetting;
@@ -32,6 +33,8 @@ namespace ShipWindows
         {
             vanillaMode = cfg.Bind("General", "VanillaMode", false,
                 "Enable this to preserve vanilla network compatability. This will disable unlockables and the shutter toggle switch. (default = false)");
+            glassRefraction = cfg.Bind("General", "EnableRefraction", false,
+                "Enable refraction on the glass shader. (Note: This will cause issues with certain VFX and is performance heavy.)");
             enableShutter =         cfg.Bind("General", "EnableWindowShutter", true, 
                 "Enable the window shutter to hide transitions between space and the current moon. (default = true)");
             hideSpaceProps =        cfg.Bind("General", "HideSpaceProps", false, 

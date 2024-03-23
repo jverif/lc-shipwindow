@@ -87,6 +87,25 @@ namespace ShipWindows.Utilities
             }
         }
 
+        static void ReplaceGlassMaterial(GameObject shipPrefab)
+        {
+            if (WindowConfig.glassRefraction.Value == true) return;
+
+            Material glassNoRefraction = ShipWindowPlugin.mainAssetBundle.LoadAsset<Material>
+                    ($"Assets/LethalCompany/Mods/ShipWindow/Materials/GlassNoRefraction.mat");
+
+            if (glassNoRefraction == null) return;
+
+            // This is bad so, so bad. Don't mind me :)
+            MeshRenderer w1 = shipPrefab.transform.Find("WindowContainer/Window1/Glass")?.GetComponent<MeshRenderer>();
+            MeshRenderer w2 = shipPrefab.transform.Find("WindowContainer/Window2/Glass")?.GetComponent<MeshRenderer>();
+            MeshRenderer w3 = shipPrefab.transform.Find("WindowContainer/Window3")?.GetComponent<MeshRenderer>();
+
+            if (w1) w1.material = glassNoRefraction;
+            if (w2) w2.material = glassNoRefraction;
+            if (w3) w3.material = glassNoRefraction;
+        }
+
         public static void ReplaceShip()
         {
             try
@@ -108,6 +127,7 @@ namespace ShipWindows.Utilities
 
                 if (newShipPrefab == null) throw new Exception($"Could not load requested ship replacement! {shipName}");
                 AddWindowScripts(newShipPrefab);
+                ReplaceGlassMaterial(newShipPrefab);
 
                 newShipInside = ObjectReplacer.Replace(vanillaShipInside, newShipPrefab);
 
@@ -184,14 +204,10 @@ namespace ShipWindows.Utilities
         // If any of the window spawners still exist without windows, spawn those windows.
         public static IEnumerator CheckForKeptSpawners()
         {
-            yield return new WaitForSeconds(1f);
+            yield return new WaitForSeconds(2f);
 
             ShipWindowSpawner[] windows = UnityEngine.Object.FindObjectsByType<ShipWindowSpawner>(FindObjectsSortMode.None);
-
-            foreach (ShipWindowSpawner window in windows)
-            {
-                ReplaceDebounced(true);
-            }
+            if (windows.Length > 0) ReplaceDebounced(true);
         }
     }
 }
