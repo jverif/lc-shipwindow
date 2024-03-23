@@ -1,4 +1,4 @@
-# Ship Window
+# Ship Windows
 Adds three glass windows to the ship's store as permanent ship upgrades. Availability and price both configurable.
 
 ![Screenshot_1](https://raw.githubusercontent.com/jverif/lc-shipwindow/main/Screenshots/showcase.png "Showcase")
@@ -6,7 +6,6 @@ Adds three glass windows to the ship's store as permanent ship upgrades. Availab
 ## Compatibility
 - Toggle "VanillaMode" in your configuration to make this mod client-side only and compatible with vanilla lobbies.
 - This mod is not compatible with other mods that change the ship's model.
-- LethalPosters may be incompatible. If you have issues with it, set "DontMovePosters" to true in your ShipWindows config.
 
 **Important: If you are updating from < 2.0.0, you will need to enable windows 2 and 3 in your config for them to be purchasable!**
 
@@ -28,6 +27,11 @@ Thunderstore Link: https://thunderstore.io/c/lethal-company/p/veri/ShipWindows/
 - Soup (@souper194) - Shutter texture used on versions >= 1.2.0
 
 ## Update History
+
+- **2.0.3**
+    - Add support for custom poster materials when Left window is active.
+    - Disable refractive glass by default. It can be enabled in the config still.
+    - Moved 4K skybox to a separate mod / addon to reduce main bundle size.
 
 - **2.0.2**
     - Fix black sky with certain mod configurations.

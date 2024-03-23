@@ -28,7 +28,7 @@ namespace ShipWindows
     {
         private const string modGUID = "veri.lc.shipwindow";
         private const string modName = "Ship Window";
-        private const string modVersion = "2.0.2";
+        private const string modVersion = "2.0.3";
 
         public readonly Harmony harmony = new Harmony(modGUID);
 
@@ -103,6 +103,8 @@ namespace ShipWindows
             harmony.PatchAll(typeof(Unlockables));
 
             CompatibleDependencyAttribute.Init(this);
+
+            ShipWindow4K.TryToLoad();
 
             Log.LogInfo("Loaded successfully!");
         }
@@ -199,11 +201,9 @@ namespace ShipWindows
                     outsideSkybox.AddComponent<SpaceSkybox>();
 
                     // Load texture
-                    if (WindowConfig.skyboxResolution.Value == 1) // 4K
+                    if (ShipWindow4K.Skybox4K != null) // 4K
                     {
-                        Texture2D skybox4K = mainAssetBundle.LoadAsset<Texture2D>("Assets/LethalCompany/Mods/ShipWindow/Textures/Space4KCube.png");
-                        if (skybox4K != null)
-                            outsideSkybox.GetComponent<SpaceSkybox>()?.SetSkyboxTexture(skybox4K);
+                        outsideSkybox.GetComponent<SpaceSkybox>()?.SetSkyboxTexture(ShipWindow4K.Skybox4K);
                     }
 
                     break;

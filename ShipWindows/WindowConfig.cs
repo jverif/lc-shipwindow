@@ -49,7 +49,7 @@ namespace ShipWindows
             rotateSkybox =          cfg.Bind("General", "RotateSpaceSkybox", true, 
                 "Enable slow rotation of the space skybox for visual effect. Requires 'SpaceOutside' to be set to 1 or 2.");
             skyboxResolution =      cfg.Bind("General", "SkyboxResolution", 0,
-                "Sets the skybox resolution (0 = 2K, 1 = 4K) 4K textures may cause performance issues. Requires 'SpaceOutside' to be set to 1 or 2.");
+                "OBSOLETE: Download [Ship Windows 4K Skybox] from the Thunderstore to enable!");
 
             windowsUnlockable = cfg.Bind("General", "WindowsUnlockable", true,
                 "Adds the windows to the terminal as ship upgrades. Set this to false and use below settings to have them enabled by default.");

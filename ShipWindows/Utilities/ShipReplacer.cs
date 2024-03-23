@@ -91,6 +91,8 @@ namespace ShipWindows.Utilities
         {
             if (WindowConfig.glassRefraction.Value == true) return;
 
+            ShipWindowPlugin.Log.LogInfo("Glass refraction is OFF! Replacing material...");
+
             Material glassNoRefraction = ShipWindowPlugin.mainAssetBundle.LoadAsset<Material>
                     ($"Assets/LethalCompany/Mods/ShipWindow/Materials/GlassNoRefraction.mat");
 
