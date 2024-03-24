@@ -153,9 +153,11 @@ namespace ShipWindows.Utilities
             ShipWindowPlugin.Log.LogInfo("Spawning shutter switch...");
             if (ShipWindowPlugin.windowSwitchPrefab != null)
             {
-                switchInstance = UnityEngine.GameObject.Instantiate(ShipWindowPlugin.windowSwitchPrefab);
-                switchInstance.GetComponent<NetworkObject>().Spawn();
-                
+                if (NetworkManager.Singleton.IsHost || NetworkManager.Singleton.IsServer)
+                {
+                    switchInstance = UnityEngine.GameObject.Instantiate(ShipWindowPlugin.windowSwitchPrefab);
+                    switchInstance.GetComponent<NetworkObject>().Spawn();
+                }   
             }
         }
 

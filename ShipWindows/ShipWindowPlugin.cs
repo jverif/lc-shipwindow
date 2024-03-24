@@ -28,7 +28,7 @@ namespace ShipWindows
     {
         private const string modGUID = "veri.lc.shipwindow";
         private const string modName = "Ship Window";
-        private const string modVersion = "2.0.3";
+        private const string modVersion = "2.0.4";
 
         public readonly Harmony harmony = new Harmony(modGUID);
 
