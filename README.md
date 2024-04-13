@@ -15,6 +15,7 @@ Thunderstore Link: https://thunderstore.io/c/lethal-company/p/veri/ShipWindows/
 
 ## Recommended Mods
 - **[Celestial Tint](https://thunderstore.io/c/lethal-company/p/sfDesat/Celestial_Tint/)** by **sfDesat** - For an amazing view of space outside the windows.
+
 OR
 - **[Ship Windows 4K Skybox](https://thunderstore.io/c/lethal-company/p/veri/ShipWindows_4K_Skybox/)** by **veri** - For a higher definition space skybox. This does not work with Celestial Tint.
 
@@ -29,6 +30,12 @@ OR
 - Soup (@souper194) - Shutter texture used on versions >= 1.2.0
 
 ## Update History
+
+- **2.0.5**
+    - Hide some misc objects in space (Thanks to sf Desat for finding these and the code to hide them.)
+
+- **2.0.4**
+    - Fix small error
 
 - **2.0.3**
     - Add support for custom poster materials when Left window is active.

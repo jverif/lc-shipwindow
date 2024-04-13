@@ -28,7 +28,7 @@ namespace ShipWindows
     {
         private const string modGUID = "veri.lc.shipwindow";
         private const string modName = "Ship Window";
-        private const string modVersion = "2.0.4";
+        private const string modVersion = "2.0.5";
 
         public readonly Harmony harmony = new Harmony(modGUID);
 
@@ -239,6 +239,20 @@ namespace ShipWindows
             }
         }
 
+        static void HideMiscMeshes()
+        {
+            /*
+             * Thanks to sf Desat for finding these.
+             */
+            GameObject notSpawnedPlatform1 = GameObject.Find("notSpawnedPlatform");
+            GameObject notSpawnedPlatform2 = GameObject.Find("notSpawnedPlatform (1)");
+
+            MeshRenderer r1 = notSpawnedPlatform1?.GetComponent<MeshRenderer>();
+            MeshRenderer r2 = notSpawnedPlatform2?.GetComponent<MeshRenderer>();
+            if (r1) r1.enabled = false;
+            if (r2) r2.enabled = false;
+        }
+
         public static void OpenWindowDelayed(float delay)
         {
             if (windowCoroutine != null) StartOfRound.Instance.StopCoroutine(windowCoroutine);
@@ -331,6 +345,7 @@ namespace ShipWindows
 
                 AddStars();
                 HideSpaceProps();
+                HideMiscMeshes();
 
             } catch (Exception e)
             {

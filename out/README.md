@@ -31,6 +31,9 @@ OR
 
 ## Update History
 
+- **2.0.5**
+    - Hide some misc objects in space (Thanks to sf Desat for finding these and the code to hide them.)
+
 - **2.0.4**
     - Fix small error
 
