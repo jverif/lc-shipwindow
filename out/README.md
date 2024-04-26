@@ -31,6 +31,9 @@ OR
 
 ## Update History
 
+- **2.0.6**
+    - Compatibility with Celestial Tint >= 1.2.0
+
 - **2.0.5**
     - Hide some misc objects in space (Thanks to sf Desat for finding these and the code to hide them.)
 

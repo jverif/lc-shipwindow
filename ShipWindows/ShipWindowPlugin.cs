@@ -20,7 +20,7 @@ namespace ShipWindows
 {
     [BepInPlugin(modGUID, modName, modVersion)]
 
-    [CompatibleDependency("NightSkyPlugin", "1.0.1", typeof(CelestialTint))]
+    [CompatibleDependency("CelestialTint", "1.0.1", typeof(CelestialTint))]
     [CompatibleDependency("LethalExpansion", typeof(LethalExpansion))]
     [CompatibleDependency("com.github.lethalmods.lethalexpansioncore", typeof(LethalExpansion))]
 
@@ -28,7 +28,7 @@ namespace ShipWindows
     {
         private const string modGUID = "veri.lc.shipwindow";
         private const string modName = "Ship Window";
-        private const string modVersion = "2.0.5";
+        private const string modVersion = "2.0.6";
 
         public readonly Harmony harmony = new Harmony(modGUID);
 
