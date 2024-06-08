@@ -1,4 +1,9 @@
 # Ship Windows
+---
+### WARNING: This mod is no longer maintained and may not function with further game updates.
+### Please use the continuation of this mod by TestAccount666 located **[HERE](https://thunderstore.io/c/lethal-company/p/TestAccount666/ShipWindows/)**.
+---
+
 Adds three glass windows to the ship's store as permanent ship upgrades. Availability and price both configurable.
 
 ![Screenshot_1](https://raw.githubusercontent.com/jverif/lc-shipwindow/main/Screenshots/showcase.png "Showcase")
@@ -19,17 +24,13 @@ Thunderstore Link: https://thunderstore.io/c/lethal-company/p/veri/ShipWindows/
 OR
 - **[Ship Windows 4K Skybox](https://thunderstore.io/c/lethal-company/p/veri/ShipWindows_4K_Skybox/)** by **veri** - For a higher definition space skybox. This does not work with Celestial Tint.
 
-## Planned Features
-- Update window shapes and add trim.
-- Update shutter mesh
-- Window decorations (curtains, etc.)
-- Open / close sounds.
-- Door windows
-
 ## Thanks to
 - Soup (@souper194) - Shutter texture used on versions >= 1.2.0
 
 ## Update History
+
+- **2.0.7**
+    - Deprecation.
 
 - **2.0.6**
     - Compatibility with Celestial Tint >= 1.2.0
